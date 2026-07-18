@@ -1,12 +1,64 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <meta name="theme-color" content="#0c0d0f" />
+    <meta name="description" content="#コンパスのプロフィールを入力して、SNSやフレンド募集に使える履歴書画像を無料で作成できます。" />
+    <meta name="robots" content="index, follow" />
+
+    <title>#コンパス履歴書ジェネレーター V2</title>
+    <link rel="canonical" href="https://cpsresume.aosankaku.net/" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Reactと外部CSSの読み込み前に保存済みテーマを確定し、FOUCを防ぐ -->
+    <script>
+      (() => {
+        let theme = 'dark'
+        try {
+          if (localStorage.getItem('compass-site-theme') === 'light') theme = 'light'
+        } catch {}
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#eeece6' : '#0c0d0f')
+      })()
+    </script>
+    <style id="critical-theme">
+      :root { color-scheme: dark; background: #0c0d0f; }
+      html, body, #root { min-height: 100%; background: #0c0d0f; color: #f3efe7; }
+      :root[data-theme="light"] { color-scheme: light; background: #eeece6; }
+      :root[data-theme="light"], :root[data-theme="light"] body, :root[data-theme="light"] #root { background: #eeece6; color: #202126; }
+      body { margin: 0; }
+    </style>
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:site_name" content="#コンパス履歴書ジェネレーター V2" />
+    <meta property="og:title" content="#コンパス履歴書ジェネレーター V2" />
+    <meta property="og:description" content="プロフィールを入力して、SNSやフレンド募集に使える#コンパス履歴書画像を作成しよう。" />
+    <meta property="og:url" content="https://cpsresume.aosankaku.net/" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="#コンパス履歴書ジェネレーター V2" />
+    <meta name="twitter:description" content="プロフィールを入力して、SNSやフレンド募集に使える#コンパス履歴書画像を作成しよう。" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "#コンパス履歴書ジェネレーター V2",
+        "url": "https://cpsresume.aosankaku.net/",
+        "description": "#コンパスのプロフィールを入力して、SNSやフレンド募集に使える履歴書画像を無料で作成できます。",
+        "applicationCategory": "DesignApplication",
+        "operatingSystem": "Web Browser",
+        "inLanguage": "ja",
+        "isAccessibleForFree": true
+      }
+    </script>
   </head>
   <body>
+    <noscript>このアプリを利用するにはJavaScriptを有効にしてください。</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
