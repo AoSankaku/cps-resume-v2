@@ -12,7 +12,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 
 
 const appNamePrefix = "コンパス履歴書"
-const appNameSuffix = "ジェネレーター"
+const appNameSuffix = "ジェネレーター V2"
 
 function ResponsiveAppBar() {
 
