@@ -1,0 +1,270 @@
+# キャラクター追加手順
+# 1. heroes の末尾へ role / fullName / name を追記します。
+# 2. role は attacker / gunner / tank / sprinter のいずれかです。
+# 3. fullName は重複しない正式表示名、name は短縮名です。
+
+heroes:
+  - role: attacker
+    fullName: 双挽 乃保
+    name: ノホ
+  - role: attacker
+    fullName: 桜華 忠臣
+    name: 忠臣
+  - role: attacker
+    fullName: マルコス'55
+    name: マルコス
+  - role: attacker
+    fullName: ソル=バッドガイ
+    name: ソル
+  - role: attacker
+    fullName: リュウ
+    name: リュウ
+  - role: attacker
+    fullName: マリア=S=レオンブルク
+    name: マリア
+  - role: attacker
+    fullName: アダム=ユーリエフ
+    name: アダム
+  - role: attacker
+    fullName: レム
+    name: レム
+  - role: attacker
+    fullName: カイ=キスク
+    name: カイ
+  - role: attacker
+    fullName: ポロロッチョ
+    name: ポロ
+  - role: attacker
+    fullName: リヴァイ
+    name: リヴァイ
+  - role: attacker
+    fullName: デビルミント鬼龍 デルミン
+    name: デルミン
+  - role: attacker
+    fullName: セイバーオルタ
+    name: オルタ
+  - role: attacker
+    fullName: ルルカ
+    name: ルルカ
+  - role: attacker
+    fullName: アイズ・ヴァレンシュタイン
+    name: アイズ
+  - role: attacker
+    fullName: 狐ケ咲 甘色
+    name: 甘色
+  - role: attacker
+    fullName: ノクティス
+    name: ノクト
+  - role: attacker
+    fullName: イグニス=ウィル=ウィスプ
+    name: イグニス
+  - role: attacker
+    fullName: キリト
+    name: キリト
+  - role: attacker
+    fullName: ステリア・ララ・シルワ
+    name: ステリア
+  - role: attacker
+    fullName: 2B
+    name: 2B
+  - role: attacker
+    fullName: リムル=テンペスト
+    name: リムル
+  - role: attacker
+    fullName: 御坂美琴
+    name: 御坂美琴
+  - role: attacker
+    fullName: クー・シー
+    name: クー・シー
+  - role: attacker
+    fullName: デンジ
+    name: デンジ
+  - role: attacker
+    fullName: ターニャ・デグレチャフ
+    name: ターニャ
+  - role: attacker
+    fullName: コラプス
+    name: コラプス
+  - role: attacker
+    fullName: ボンドルド
+    name: ボンドルド
+  - role: attacker
+    fullName: ゴン=フリークス
+    name: ゴン
+  - role: gunner
+    fullName: リリカ
+    name: リリカ
+  - role: gunner
+    fullName: ルチアーノ
+    name: ルチアーノ
+  - role: gunner
+    fullName: 深川まとい
+    name: まとい
+  - role: gunner
+    fullName: ディズィー
+    name: ディズィー
+  - role: gunner
+    fullName: 13 †サーティーン†
+    name: "13"
+  - role: gunner
+    fullName: エミリア
+    name: エミリア
+  - role: gunner
+    fullName: メグメグ
+    name: メグメグ
+  - role: gunner
+    fullName: 鏡音リン
+    name: リン
+  - role: gunner
+    fullName: イスタカ
+    name: イスタカ
+  - role: gunner
+    fullName: ソーン
+    name: ソーン
+  - role: gunner
+    fullName: 猫宮 ひなた
+    name: 猫宮
+  - role: gunner
+    fullName: 岡部 倫太郎
+    name: オカリン
+  - role: gunner
+    fullName: ギルガメッシュ
+    name: ギル
+  - role: gunner
+    fullName: ニーズヘッグ
+    name: ニーズヘッグ
+  - role: gunner
+    fullName: 芥川 龍之介
+    name: 芥川
+  - role: gunner
+    fullName: ゲームバズーカガール
+    name: GBガール
+  - role: gunner
+    fullName: アインズ・ウール・ゴウン
+    name: アインズ
+  - role: gunner
+    fullName: 糸廻 輪廻
+    name: 輪廻
+  - role: gunner
+    fullName: Bugdoll
+    name: バグド
+  - role: gunner
+    fullName: アクセラレータ
+    name: アクセラ
+  - role: gunner
+    fullName: 天空王 ぶれいずどらごん
+    name: ぶれどら
+  - role: gunner
+    fullName: ロキシー・ミグルディア
+    name: ロキシー
+  - role: gunner
+    fullName: ロックマン.EXE ＆ 光熱斗
+    name: ロックマン
+  - role: gunner
+    fullName: シノン
+    name: シノン
+  - role: gunner
+    fullName: みりぽゆ
+    name: みりぽゆ
+  - role: tank
+    fullName: ジャスティス・ハンコック
+    name: ジャスティス
+  - role: tank
+    fullName: ジャンヌ・ダルク
+    name: ジャンヌ
+  - role: tank
+    fullName: グスタフ ハイドリヒ
+    name: グスタフ
+  - role: tank
+    fullName: ヴィオレッタ ノワール
+    name: ヴィオレッタ
+  - role: tank
+    fullName: 鏡音レン
+    name: レン
+  - role: tank
+    fullName: モノクマ
+    name: モノクマ
+  - role: tank
+    fullName: めぐみん
+    name: めぐみん
+  - role: tank
+    fullName: トマス
+    name: トマス
+  - role: tank
+    fullName: 佐藤四郎兵衛忠信
+    name: 忠信
+  - role: tank
+    fullName: ライザリン・シュタウト
+    name: ライザ
+  - role: tank
+    fullName: 青春 アリス
+    name: アリス
+  - role: tank
+    fullName: ラヴィ・シュシュマルシュ
+    name: ラヴィ
+  - role: tank
+    fullName: アミスター=バランディン
+    name: アミスター
+  - role: tank
+    fullName: 鬼ヶ式 うら
+    name: うら
+  - role: sprinter
+    fullName: 十文字アタリ
+    name: アタリ
+  - role: sprinter
+    fullName: Voidoll
+    name: ボイド
+  - role: sprinter
+    fullName: ニコラ テスラ
+    name: テスラ
+  - role: sprinter
+    fullName: 初音ミク
+    name: ミク
+  - role: sprinter
+    fullName: コクリコット・ブランシュ
+    name: コクリコ
+  - role: sprinter
+    fullName: 春麗
+    name: 春麗
+  - role: sprinter
+    fullName: かけだし勇者
+    name: 勇者
+  - role: sprinter
+    fullName: ザック＆レイチェル
+    name: ザクレイ
+  - role: sprinter
+    fullName: 鬼龍院 きらら
+    name: きらら
+  - role: sprinter
+    fullName: アクア
+    name: アクア
+  - role: sprinter
+    fullName: 零夜
+    name: 零夜
+  - role: sprinter
+    fullName: ピエール77世
+    name: ピエール
+  - role: sprinter
+    fullName: 中島敦
+    name: 敦
+  - role: sprinter
+    fullName: ジョーカー
+    name: ジョーカー
+  - role: sprinter
+    fullName: アスナ
+    name: アスナ
+  - role: sprinter
+    fullName: アル・ダハブ=アルカティア
+    name: アル
+  - role: sprinter
+    fullName: 某 <なにがし>
+    name: 某
+  - role: sprinter
+    fullName: パワー
+    name: パワー
+  - role: sprinter
+    fullName: キルア=ゾルディック
+    name: キリア
+  - role: sprinter
+    fullName: チーちゃん
+    name: チーちゃん
