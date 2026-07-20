@@ -21,7 +21,8 @@ export type ResumeData = {
   silverIconCount: string
   bronzeIconCount: string
   tournamentIconCount: string
-  snsId: string
+  xId: string
+  discordId: string
   customDetailLabel: string
   customDetailValue: string
   customDetailLabel2: string
@@ -43,18 +44,19 @@ export const initialResumeData: ResumeData = {
   seasonHighestRank: '',
   maxDeckLevel: '170',
   accountLevel: '334',
-  friendCode: '1234-5678',
+  friendCode: '1234567890',
   guild: '未所属',
   playHistory: '3年',
   gender: '未回答',
-  applicationCode: 'YJ-810',
+  applicationCode: 'A-bCdE',
   favoriteHero: '青春 アリス',
   seriousLevel: 4,
   goldIconCount: '4',
   silverIconCount: '8',
   bronzeIconCount: '12',
   tournamentIconCount: '1',
-  snsId: '@compass_player',
+  xId: '@compass_player',
+  discordId: 'compass_player',
   customDetailLabel: '好きなカード',
   customDetailValue: '全天首都防壁 Hum-Sphere LLIK',
   customDetailLabel2: '好きなステージ',

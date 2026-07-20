@@ -13,7 +13,7 @@ const WIDTH = 1200
 const HEIGHT = 675
 const RESUME_FONT_FAMILY = '"Noto Sans JP", sans-serif'
 const RESUME_FONT_WEIGHTS = [600, 700, 800, 900] as const
-const RESUME_FONT_STATIC_TEXT = '#コンパス 履歴書 よみ 呼び方 最高デッキレベル デキレ 使用ヒーロー 未選択 応援コード 性別 アカウントレベル フレンドコード 所属ギルド ガチ度 アイコン数 推し コンパス歴 プレイスタイル 主な活動時間 自由項目 金銀銅大 ひとこと よろしくお願いします'
+const RESUME_FONT_STATIC_TEXT = '#コンパス 履歴書 よみ 呼び方 最高デッキレベル デキレ 使用ヒーロー 未選択 応援コード 性別 アカウントレベル フレンドコード 所属ギルド ガチ度 アイコン数 推し コンパス歴 X（Twitter）のID DiscordのID プレイスタイル 主な活動時間 自由項目 金銀銅大 ひとこと よろしくお願いします'
 const roleIcons: Record<Role, string> = { attacker: attackerIcon, gunner: gunnerIcon, tank: tankIcon, sprinter: sprinterIcon }
 const roleColors: Record<Role, string> = { attacker: '#ff3855', gunner: '#2ccf75', tank: '#ffbd27', sprinter: '#4c6fff' }
 const roleLabels: Record<Role, string> = { attacker: 'ATTACKER', gunner: 'GUNNER', tank: 'TANK', sprinter: 'SPRINTER' }
@@ -251,9 +251,9 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       ctx.fillText(data.playerName || 'NO NAME', 70, 193)
 
       const metrics: Array<[string, string]> = [
-        ...(data.highestRank ? [['BEST RANK', data.highestRank] as [string, string]] : []),
-        ...(data.seasonHighestRank ? [['SEASON BEST', data.seasonHighestRank] as [string, string]] : []),
-        ['最高デッキレベル（デキレ）', data.maxDeckLevel || '---'],
+        ...(data.highestRank ? [['最高ランク', data.highestRank] as [string, string]] : []),
+        ...(data.seasonHighestRank ? [['最高シーズンランク', data.seasonHighestRank] as [string, string]] : []),
+        ['最高デッキレベル', data.maxDeckLevel || '---'],
       ]
       const metricY = 234
       const metricGap = 12
@@ -370,7 +370,8 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         },
         favoriteHero: { label: '推し', value: data.favoriteHero },
         playHistory: { label: 'コンパス歴', value: data.playHistory },
-        snsId: { label: 'SNS ID', value: data.snsId },
+        xId: { label: 'X（Twitter）のID', value: data.xId },
+        discordId: { label: 'DiscordのID', value: data.discordId },
         playStyle: { label: 'プレイスタイル', value: data.playStyle },
         activeTime: { label: '主な活動時間', value: data.activeTime },
         custom: { label: data.customDetailLabel.trim() || '自由項目', value: data.customDetailValue },

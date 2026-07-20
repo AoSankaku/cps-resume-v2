@@ -20,7 +20,13 @@ const STORAGE_KEY = 'compass-resume-v2'
 const SITE_THEME_STORAGE_KEY = 'compass-site-theme'
 const STACKED_WORKSPACE_QUERY = '(max-width:1180px)'
 type SiteTheme = 'dark' | 'light'
-type StoredResumeData = Partial<ResumeData> & { rank?: string; enjoyRank?: string; iconCount?: string }
+type StoredResumeData = Omit<Partial<ResumeData>, 'selectedDetailKeys'> & {
+  rank?: string
+  enjoyRank?: string
+  iconCount?: string
+  snsId?: string
+  selectedDetailKeys?: unknown
+}
 
 const getInitialSiteTheme = (): SiteTheme =>
   document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
@@ -33,8 +39,14 @@ function getInitialData(): ResumeData {
     const highestRank = parsed.highestRank ?? parsed.rank ?? initialResumeData.highestRank
     const seasonHighestRank = parsed.seasonHighestRank ?? initialResumeData.seasonHighestRank
     const goldIconCount = parsed.goldIconCount ?? parsed.iconCount ?? initialResumeData.goldIconCount
+    const xId = parsed.xId ?? parsed.snsId ?? initialResumeData.xId
+    const discordId = parsed.discordId ?? initialResumeData.discordId
     const selectedDetailKeys = Array.isArray(parsed.selectedDetailKeys)
-      ? parsed.selectedDetailKeys.filter(isDetailKey).slice(0, DETAIL_LIMIT)
+      ? [...new Set(
+        parsed.selectedDetailKeys
+          .map((key: unknown) => key === 'snsId' ? 'xId' : key)
+          .filter(isDetailKey),
+      )].slice(0, DETAIL_LIMIT)
       : DEFAULT_DETAIL_KEYS
     const heroSelections = Array.isArray(parsed.heroSelections)
       ? [...new Set(
@@ -46,12 +58,15 @@ function getInitialData(): ResumeData {
     delete parsed.rank
     delete parsed.enjoyRank
     delete parsed.iconCount
+    delete parsed.snsId
     return {
       ...initialResumeData,
       ...parsed,
       highestRank,
       seasonHighestRank,
       goldIconCount,
+      xId,
+      discordId,
       selectedDetailKeys,
       heroSelections: heroSelections.length > 0 ? heroSelections : [initialResumeData.heroSelections[0]],
     }

@@ -42,6 +42,11 @@ const themePresets = [
 ]
 
 const seriousLevelLabels = ['エンジョイ', 'ゆるめ', 'ほどほど', 'しっかり', 'ガチ'] as const
+const MAX_DECK_LEVEL = 240
+const APPLICATION_CODE_PATTERN = /^[A-Za-z]-[A-Za-z]{4}$/
+const APPLICATION_CODE_WARNING_ID = 'application-code-warning'
+const FRIEND_CODE_PATTERN = /^[0-9]{10}$/
+const FRIEND_CODE_WARNING_ID = 'friend-code-warning'
 
 type ThemeColorControlProps = {
   hue: number
@@ -140,6 +145,7 @@ function ThemeColorControl({ hue, onCommit }: ThemeColorControlProps) {
 
 function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cacheStatus }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const seasonHighestRankIndex = ranks.indexOf(value.seasonHighestRank)
   const heroOptions = useMemo(
     () => roles.flatMap(({ key, label }) => hero[key].map((item) => ({ ...item, role: key, roleLabel: label }))),
     [],
@@ -147,6 +153,22 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
 
   const update = <K extends keyof ResumeData>(key: K, next: ResumeData[K]) => {
     onChange({ ...value, [key]: next })
+  }
+
+  const updateSeasonHighestRank = (next: string) => {
+    const nextRankIndex = ranks.indexOf(next)
+    const highestRankIndex = ranks.indexOf(value.highestRank)
+    onChange({
+      ...value,
+      seasonHighestRank: next,
+      highestRank: nextRankIndex > highestRankIndex ? next : value.highestRank,
+    })
+  }
+
+  const updateMaxDeckLevel = (next: string) => {
+    const numericValue = next.replace(/\D/g, '')
+    if (numericValue && Number(numericValue) > MAX_DECK_LEVEL) return
+    update('maxDeckLevel', numericValue)
   }
 
   const updateHero = (index: number, next: string) => {
@@ -180,6 +202,12 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
   }
 
   const isDetailEnabled = (key: DetailKey) => value.selectedDetailKeys.includes(key)
+  const isApplicationCodeInvalid = isDetailEnabled('supportCode')
+    && value.applicationCode.length > 0
+    && !APPLICATION_CODE_PATTERN.test(value.applicationCode)
+  const isFriendCodeInvalid = isDetailEnabled('friendCode')
+    && value.friendCode.length > 0
+    && !FRIEND_CODE_PATTERN.test(value.friendCode)
 
   const handleAvatar = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -205,7 +233,7 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
 
       <section className="form-section">
         <h3><span>01</span> 基本プロフィール</h3>
-        <p className="section-note">ランクはどちらも任意です。通算・シーズンの片方だけでも、両方未記入でも作成できます。</p>
+        <p className="section-note">ランクはどちらも任意です。最高到達ランクには、最高シーズン到達ランクと同じか、それより高いランクを選べます。</p>
         <div className="field-grid">
           <label className="field field-wide">
             <span>プレイヤー名 <b>必須</b></span>
@@ -219,19 +247,36 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
             <span>最高到達ランク <em>任意</em></span>
             <select name="highestRank" data-testid="highest-rank" value={value.highestRank} onChange={(e) => update('highestRank', e.target.value)}>
               <option value="">未記入</option>
-              {ranks.map((rank) => <option key={rank}>{rank}</option>)}
+              {ranks.map((rank, index) => (
+                <option
+                  key={rank}
+                  disabled={seasonHighestRankIndex >= 0 && index < seasonHighestRankIndex}
+                >
+                  {rank}
+                </option>
+              ))}
             </select>
           </label>
           <label className="field">
             <span>最高シーズン到達ランク <em>任意</em></span>
-            <select name="seasonHighestRank" data-testid="season-highest-rank" value={value.seasonHighestRank} onChange={(e) => update('seasonHighestRank', e.target.value)}>
+            <select
+              name="seasonHighestRank"
+              data-testid="season-highest-rank"
+              value={value.seasonHighestRank}
+              onChange={(e) => updateSeasonHighestRank(e.target.value)}
+            >
               <option value="">未記入</option>
               {ranks.map((rank) => <option key={rank}>{rank}</option>)}
             </select>
           </label>
           <label className="field">
-            <span>最高デッキレベル</span>
-            <input inputMode="numeric" value={value.maxDeckLevel} maxLength={3} onChange={(e) => update('maxDeckLevel', e.target.value.replace(/\D/g, ''))} />
+            <span>最高デッキレベル <em>最大{MAX_DECK_LEVEL}</em></span>
+            <input
+              inputMode="numeric"
+              value={value.maxDeckLevel}
+              maxLength={3}
+              onChange={(e) => updateMaxDeckLevel(e.target.value)}
+            />
           </label>
         </div>
       </section>
@@ -276,7 +321,19 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
           <div className="field-grid">
             <label className={`field${isDetailEnabled('supportCode') ? '' : ' field-disabled'}`}>
               <span>応援コード</span>
-              <input disabled={!isDetailEnabled('supportCode')} value={value.applicationCode} maxLength={18} onChange={(event) => update('applicationCode', event.target.value)} />
+              <input
+                disabled={!isDetailEnabled('supportCode')}
+                value={value.applicationCode}
+                maxLength={18}
+                aria-invalid={isApplicationCodeInvalid}
+                aria-describedby={isApplicationCodeInvalid ? APPLICATION_CODE_WARNING_ID : undefined}
+                onChange={(event) => update('applicationCode', event.target.value)}
+              />
+              {isApplicationCodeInvalid && (
+                <small id={APPLICATION_CODE_WARNING_ID} className="field-warning" role="alert">
+                  英字1文字-英字4文字で入力してください（例：A-bCdE）。大文字・小文字はどちらも使えます。
+                </small>
+              )}
             </label>
             <label className={`field${isDetailEnabled('gender') ? '' : ' field-disabled'}`}>
               <span>性別</span>
@@ -290,7 +347,20 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
             </label>
             <label className={`field${isDetailEnabled('friendCode') ? '' : ' field-disabled'}`}>
               <span>フレンドコード</span>
-              <input disabled={!isDetailEnabled('friendCode')} value={value.friendCode} maxLength={24} onChange={(event) => update('friendCode', event.target.value)} />
+              <input
+                disabled={!isDetailEnabled('friendCode')}
+                inputMode="numeric"
+                value={value.friendCode}
+                maxLength={24}
+                aria-invalid={isFriendCodeInvalid}
+                aria-describedby={isFriendCodeInvalid ? FRIEND_CODE_WARNING_ID : undefined}
+                onChange={(event) => update('friendCode', event.target.value)}
+              />
+              {isFriendCodeInvalid && (
+                <small id={FRIEND_CODE_WARNING_ID} className="field-warning" role="alert">
+                  半角数字10文字で入力してください（例：1234567890）。
+                </small>
+              )}
             </label>
             <label className={`field${isDetailEnabled('guild') ? '' : ' field-disabled'}`}>
               <span>所属ギルド</span>
@@ -300,9 +370,13 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
               <span>コンパス歴</span>
               <input disabled={!isDetailEnabled('playHistory')} value={value.playHistory} maxLength={12} onChange={(event) => update('playHistory', event.target.value)} />
             </label>
-            <label className={`field${isDetailEnabled('snsId') ? '' : ' field-disabled'}`}>
-              <span>SNSのID</span>
-              <input disabled={!isDetailEnabled('snsId')} value={value.snsId} maxLength={28} placeholder="@player_id" onChange={(event) => update('snsId', event.target.value)} />
+            <label className={`field${isDetailEnabled('xId') ? '' : ' field-disabled'}`}>
+              <span>X（Twitter）のID</span>
+              <input disabled={!isDetailEnabled('xId')} value={value.xId} maxLength={28} placeholder="@player_id" onChange={(event) => update('xId', event.target.value)} />
+            </label>
+            <label className={`field${isDetailEnabled('discordId') ? '' : ' field-disabled'}`}>
+              <span>DiscordのID</span>
+              <input disabled={!isDetailEnabled('discordId')} value={value.discordId} maxLength={32} placeholder="player_id" onChange={(event) => update('discordId', event.target.value)} />
             </label>
             <label className={`field${isDetailEnabled('playStyle') ? '' : ' field-disabled'}`}>
               <span>プレイスタイル</span>

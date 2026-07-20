@@ -55,6 +55,8 @@ main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px
 .field input:disabled, .field select:disabled, .field textarea:disabled { cursor: not-allowed; border-color: #34353a; border-style: dashed; background: #101115; color: #6f7077; -webkit-text-fill-color: #6f7077; opacity: 1; }
 .field select option, .field select optgroup { background: #15161a; color: var(--ink); }
 .field small { align-self: flex-end; color: #8e8a85; font-size: 10px; margin-top: -3px; }
+.field input[aria-invalid="true"] { border-color: #e3a15f; box-shadow: inset 4px 0 #e3a15f; }
+.field small.field-warning { align-self: flex-start; color: #f0ad69; font-weight: 700; line-height: 1.5; }
 .field-disabled { opacity: .52; }
 .field-disabled > span::after, .icon-count-fieldset.field-disabled legend::after { content: '未選択'; margin-left: auto; padding: 2px 5px; border: 1px solid #55565d; color: #a1a2a8; font-size: 9px; font-weight: 800; letter-spacing: .04em; }
 .field-wide { grid-column: span 2; }
@@ -232,6 +234,8 @@ footer strong { color: #fff; font-size: 13px; }
 :root[data-theme="light"] .field input, :root[data-theme="light"] .field select, :root[data-theme="light"] .field textarea { border-color: #bdb8af; }
 :root[data-theme="light"] .field input:hover, :root[data-theme="light"] .field select:hover, :root[data-theme="light"] .field textarea:hover { border-color: #817d76; background: #f8f5ee; }
 :root[data-theme="light"] .field input:focus, :root[data-theme="light"] .field select:focus, :root[data-theme="light"] .field textarea:focus { background: #fff; }
+:root[data-theme="light"] .field input[aria-invalid="true"] { border-color: #a74f1f; box-shadow: inset 4px 0 #a74f1f; }
+:root[data-theme="light"] .field small.field-warning { color: #8a3f16; }
 :root[data-theme="light"] .field input:disabled, :root[data-theme="light"] .field select:disabled, :root[data-theme="light"] .field textarea:disabled { border-color: #c8c3ba; background: #e9e6df; color: #77736c; -webkit-text-fill-color: #77736c; }
 :root[data-theme="light"] .field select option, :root[data-theme="light"] .field select optgroup { background: #fffefa; }
 :root[data-theme="light"] .field-disabled > span::after, :root[data-theme="light"] .icon-count-fieldset.field-disabled legend::after, :root[data-theme="light"] .custom-detail-fieldset.fields-disabled legend::after { border-color: #aaa59c; color: #625f59; }
