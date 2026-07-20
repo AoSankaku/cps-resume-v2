@@ -18,7 +18,7 @@ import { getThemeColor, getThemeContrastColor, THEME_LIGHTNESS, THEME_SATURATION
 
 const STORAGE_KEY = 'compass-resume-v2'
 const SITE_THEME_STORAGE_KEY = 'compass-site-theme'
-const STACKED_WORKSPACE_QUERY = '(max-width:1180px)'
+const STACKED_WORKSPACE_QUERY = '(max-width:1652px)'
 type SiteTheme = 'dark' | 'light'
 const getInitialSiteTheme = (): SiteTheme =>
   document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'

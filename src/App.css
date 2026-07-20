@@ -327,7 +327,7 @@ footer strong { color: #fff; font-size: 13px; }
 :root[data-theme="light"] .footer-brand a { color: #48453f; }
 :root[data-theme="light"] .footer-brand a:hover { color: var(--red); }
 
-@media (max-width: 1180px) {
+@media (max-width: 1652px) {
   .workspace { grid-template-columns: 1fr; }
   .preview-column { position: static; }
   .preview-column-primary { grid-row: 1; }
