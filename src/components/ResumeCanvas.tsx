@@ -305,7 +305,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       ctx.fillRect(44, 115, 7, 92)
       ctx.fillStyle = '#77736d'
       ctx.font = `700 16px ${RESUME_FONT_FAMILY}`
-      drawCanvasText(ctx, data.pronunciation || 'よみ・呼び方', 72, 130, emojiImages)
+      drawCanvasText(ctx, data.pronunciation, 72, 130, emojiImages)
       ctx.fillStyle = '#161616'
       fitText(ctx, data.playerName || 'NO NAME', 700, 60, 900)
       drawCanvasText(ctx, data.playerName || 'NO NAME', 70, 193, emojiImages)
