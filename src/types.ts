@@ -3,9 +3,13 @@ import type { DetailKey } from './details'
 export type Role = 'attacker' | 'gunner' | 'tank' | 'sprinter'
 export type CacheStatus = 'saved' | 'without-image' | 'error'
 export type AvatarFit = 'contain' | 'cover'
+export type AvatarFrame = 'square' | 'landscape'
 
 export const isAvatarFit = (value: unknown): value is AvatarFit =>
   value === 'contain' || value === 'cover'
+
+export const isAvatarFrame = (value: unknown): value is AvatarFrame =>
+  value === 'square' || value === 'landscape'
 
 export type ResumeData = {
   playerName: string
@@ -40,6 +44,7 @@ export type ResumeData = {
   playStyle: string
   activeTime: string
   avatarDataUrl: string
+  avatarFrame: AvatarFrame
   avatarFit: AvatarFit
   showPlayerIcon: boolean
   themeHue: number
@@ -78,6 +83,7 @@ export const initialResumeData: ResumeData = {
   playStyle: '固定も野良も楽しみます',
   activeTime: '平日 21:00〜 / 休日',
   avatarDataUrl: '',
+  avatarFrame: 'square',
   avatarFit: 'contain',
   showPlayerIcon: true,
   themeHue: 28,

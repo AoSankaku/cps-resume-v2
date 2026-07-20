@@ -10,6 +10,26 @@ describe('parseResumeText', () => {
     if (!result.ok) return
     expect(result.corrected).toBe(false)
     expect(result.data.playerName).toBe(initialResumeData.playerName)
+    expect(result.data.avatarFrame).toBe('square')
+  })
+
+  test('横長のプレイヤーアイコン枠をバックアップへ保持する', () => {
+    const result = parseResumeText(serializeResumeData({
+      ...initialResumeData,
+      avatarFrame: 'landscape',
+    }))
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.avatarFrame).toBe('landscape')
+  })
+
+  test('枠情報がない以前のデータは正方形へ移行する', () => {
+    const result = parseResumeText(JSON.stringify({ playerName: 'テスト' }))
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.avatarFrame).toBe('square')
   })
 
   test('全角のJSON記号と英数字を補正する', () => {
@@ -56,7 +76,7 @@ describe('parseResumeText', () => {
     expect(result.data.selectedDetailKeys).toEqual(['xId'])
   })
 
-  test('自由項目3の見出し・内容・選択状態を読み込める', () => {
+  test('自由項目Lの見出し・内容・選択状態を読み込める', () => {
     const result = parseResumeText(JSON.stringify({
       customDetailLabel3: '募集内容',
       customDetailValue3: '固定メンバーを募集しています',
@@ -68,6 +88,18 @@ describe('parseResumeText', () => {
     expect(result.data.customDetailLabel3).toBe('募集内容')
     expect(result.data.customDetailValue3).toBe('固定メンバーを募集しています')
     expect(result.data.selectedDetailKeys).toEqual(['favoriteHero', 'custom3'])
+  })
+
+  test('ひとことを2行までに収める', () => {
+    const result = parseResumeText(JSON.stringify({
+      comment: `1行目\r\n2行目\n3行目${'あ'.repeat(90)}`,
+    }))
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.comment).toStartWith('1行目\n2行目 3行目')
+    expect(result.data.comment.match(/\n/g)).toHaveLength(1)
+    expect(result.data.comment.length).toBe(90)
   })
 
   test('別形式のデータは拒否する', () => {

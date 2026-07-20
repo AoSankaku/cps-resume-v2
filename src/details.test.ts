@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { countDetailSlots, getDetailLayout, limitDetailKeys, type DetailKey } from './details'
 
 describe('detail slot helpers', () => {
-  test('自由項目3は2枠として数える', () => {
+  test('自由項目Lは2枠として数える', () => {
     expect(countDetailSlots(['favoriteHero', 'custom3'])).toBe(3)
   })
 
@@ -26,7 +26,7 @@ describe('detail slot helpers', () => {
     expect(countDetailSlots(limitDetailKeys(keys))).toBe(6)
   })
 
-  test('自由項目3を通常4項目の下へ2列幅で配置する', () => {
+  test('自由項目Lを通常4項目の下へ2列幅で配置する', () => {
     const layout = getDetailLayout([
       'favoriteHero',
       'seriousLevel',

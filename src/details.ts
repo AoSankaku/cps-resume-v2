@@ -14,9 +14,9 @@ export const detailOptions = [
   { key: 'discordId', label: 'DiscordのID', description: 'DiscordのIDを掲載', slots: 1 },
   { key: 'playStyle', label: 'プレイスタイル', description: '固定・野良などの遊び方を掲載', slots: 1 },
   { key: 'activeTime', label: '主な活動時間', description: 'よく遊ぶ時間帯を掲載', slots: 1 },
-  { key: 'custom', label: '自由項目 1', description: '見出しと内容を自由に設定', slots: 1 },
-  { key: 'custom2', label: '自由項目 2', description: '2つ目の見出しと内容を自由に設定', slots: 1 },
-  { key: 'custom3', label: '自由項目 3（横長）', description: '横幅いっぱいに表示・2枠使用', slots: 2 },
+  { key: 'custom', label: '自由項目A', description: '見出しと内容を自由に設定', slots: 1 },
+  { key: 'custom2', label: '自由項目B', description: '2つ目の見出しと内容を自由に設定', slots: 1 },
+  { key: 'custom3', label: '自由項目L（横長）', description: '横幅いっぱいに表示・2枠使用', slots: 2 },
 ] as const
 
 export type DetailKey = (typeof detailOptions)[number]['key']

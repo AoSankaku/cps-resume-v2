@@ -14,6 +14,7 @@ import {
   type EmojiImageMap,
 } from '../canvasText'
 import { getDetailLayout, type DetailKey } from '../details'
+import { normalizeComment } from '../resumeData'
 import type { AvatarFit, ResumeData, Role } from '../types'
 import { getThemeColor, getThemeContrastColor } from '../theme'
 
@@ -25,7 +26,7 @@ const RENDER_WIDTH = Math.round(WIDTH * HIGH_QUALITY_EXPORT_SCALE)
 const RENDER_HEIGHT = Math.round(HEIGHT * HIGH_QUALITY_EXPORT_SCALE)
 const RESUME_FONT_FAMILY = '"Noto Sans JP", sans-serif'
 const RESUME_FONT_WEIGHTS = [600, 700, 800, 900] as const
-const RESUME_FONT_STATIC_TEXT = '#コンパス 履歴書 よみ 呼び方 最高デッキレベル デキレ 使用ヒーロー 未選択 応援コード 性別 アカウントレベル フレンドコード 所属ギルド ガチ度 アイコン数 推し コンパス歴 X（Twitter）のID DiscordのID プレイスタイル 主な活動時間 自由項目 金銀銅大 ひとこと よろしくお願いします'
+const RESUME_FONT_STATIC_TEXT = '#コンパス 履歴書 よみ 呼び方 最高デッキレベル デキレ 使用ヒーロー 未選択 応援コード 性別 アカウントレベル フレンドコード 所属ギルド ガチ度 アイコン数 推し コンパス歴 X（Twitter）のID DiscordのID プレイスタイル 主な活動時間 自由項目A 自由項目B 自由項目L 金銀銅大 ひとこと よろしくお願いします'
 const roleIcons: Record<Role, string> = { attacker: attackerIcon, gunner: gunnerIcon, tank: tankIcon, sprinter: sprinterIcon }
 const roleColors: Record<Role, string> = { attacker: '#ff3855', gunner: '#2ccf75', tank: '#ffbd27', sprinter: '#4c6fff' }
 const CANVAS_RENDER_REVISION = import.meta.hot
@@ -146,27 +147,57 @@ const drawWrappedText = (
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
-  y: number,
+  containerY: number,
+  containerHeight: number,
   maxWidth: number,
   lineHeight: number,
   maxLines: number,
   emojiImages: EmojiImageMap,
 ) => {
-  const characters = splitGraphemes(text)
+  const characters = splitGraphemes(text.replace(/\r\n?/g, '\n'))
   const lines: string[] = []
   let line = ''
-  for (const character of characters) {
+  let truncated = false
+  for (let index = 0; index < characters.length; index += 1) {
+    const character = characters[index]
+    if (character === '\n') {
+      lines.push(line)
+      line = ''
+      if (lines.length === maxLines) {
+        truncated = index < characters.length - 1
+        break
+      }
+      continue
+    }
     const candidate = line + character
     if (measureCanvasText(ctx, candidate) > maxWidth && line) {
       lines.push(line)
+      if (lines.length === maxLines) {
+        truncated = true
+        break
+      }
       line = character
-      if (lines.length === maxLines - 1) break
     } else {
       line = candidate
     }
   }
   if (line && lines.length < maxLines) lines.push(line)
-  lines.forEach((item, index) => drawCanvasText(ctx, item, x, y + index * lineHeight, emojiImages))
+  if (lines.length === 0) lines.push('')
+  if (truncated) {
+    const lastIndex = lines.length - 1
+    let lastLine = lines[lastIndex]
+    while (lastLine && measureCanvasText(ctx, `${lastLine}…`) > maxWidth) {
+      lastLine = splitGraphemes(lastLine).slice(0, -1).join('')
+    }
+    lines[lastIndex] = `${lastLine}…`
+  }
+
+  const metrics = lines.map((item) => ctx.measureText(item || 'あ'))
+  const ascent = Math.max(...metrics.map((item) => item.actualBoundingBoxAscent))
+  const descent = Math.max(...metrics.map((item) => item.actualBoundingBoxDescent))
+  const textHeight = ascent + descent + lineHeight * (lines.length - 1)
+  const firstBaseline = containerY + (containerHeight - textHeight) / 2 + ascent
+  lines.forEach((item, index) => drawCanvasText(ctx, item, x, firstBaseline + index * lineHeight, emojiImages))
 }
 
 const awardIconStyles = [
@@ -209,23 +240,26 @@ const drawIconCounts = (
   const itemGap = visibleIcons.length > 1
     ? Math.max(0, Math.min(24, unusedWidth / (visibleIcons.length - 1)))
     : 0
-  const countBaseline = Math.min(21, countSize + 1)
   let tileX = x
   visibleIcons.forEach((style, index) => {
     const tileY = y
+    const textBottom = tileY + tileSize - 2
     ctx.fillStyle = style.base
     ctx.fillRect(tileX, tileY, tileSize, tileSize)
     ctx.strokeStyle = style.dark
     ctx.lineWidth = 1
     ctx.strokeRect(tileX + .5, tileY + .5, tileSize - 1, tileSize - 1)
     ctx.fillStyle = style.ink
-    ctx.font = `900 ${tileSize === 18 ? 9 : 10}px ${RESUME_FONT_FAMILY}`
+    const markSize = Math.max(9, Math.round(tileSize * .68))
+    ctx.font = `900 ${markSize}px ${RESUME_FONT_FAMILY}`
+    const markBaseline = textBottom - ctx.measureText(style.mark).actualBoundingBoxDescent
     ctx.textAlign = 'center'
-    ctx.fillText(style.mark, tileX + tileSize / 2, tileY + tileSize * .7)
+    ctx.fillText(style.mark, tileX + tileSize / 2, markBaseline)
     ctx.textAlign = 'left'
     ctx.fillStyle = '#161616'
     ctx.font = `900 ${countSize}px ${RESUME_FONT_FAMILY}`
-    ctx.fillText(style.count, tileX + tileSize + 4, tileY + countBaseline)
+    const countBaseline = textBottom - ctx.measureText(style.count).actualBoundingBoxDescent
+    ctx.fillText(style.count, tileX + tileSize + 4, countBaseline)
     tileX += itemWidths[index] + itemGap
   })
 }
@@ -392,40 +426,55 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       })
 
       if (data.showPlayerIcon) {
+        const avatarFrameY = 110
+        const avatarFrameHeight = 268
+        const avatarFrameRight = 1154
+        const avatarFrameWidth = data.avatarFrame === 'square' ? avatarFrameHeight : 386
+        const avatarFrameX = avatarFrameRight - avatarFrameWidth
+        const avatarFrameBottom = avatarFrameY + avatarFrameHeight
+        const avatarLabelWidth = data.avatarFrame === 'square' ? 172 : 244
+        const avatarLabelX = avatarFrameRight - avatarLabelWidth
+
         ctx.fillStyle = '#ded6cb'
-        ctx.fillRect(768, 110, 386, 268)
+        ctx.fillRect(avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight)
         ctx.save()
-        roundedRect(ctx, 768, 110, 386, 268, 12)
+        roundedRect(ctx, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, 12)
         ctx.clip()
         if (avatar) {
-          drawFittedImage(ctx, avatar, 768, 110, 386, 268, data.avatarFit)
+          drawFittedImage(ctx, avatar, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, data.avatarFit)
         } else {
-          const gradient = ctx.createLinearGradient(768, 110, 1154, 378)
+          const gradient = ctx.createLinearGradient(avatarFrameX, avatarFrameY, avatarFrameRight, avatarFrameBottom)
           gradient.addColorStop(0, '#292929')
           gradient.addColorStop(1, accent)
           ctx.fillStyle = gradient
-          ctx.fillRect(768, 110, 386, 268)
+          ctx.fillRect(avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight)
           ctx.strokeStyle = 'rgba(255,255,255,.22)'
           ctx.lineWidth = 2
-          for (let x = 710; x < 1220; x += 32) {
+          for (let x = avatarFrameX - 58; x < avatarFrameRight + 66; x += 32) {
             ctx.beginPath()
-            ctx.moveTo(x, 110)
-            ctx.lineTo(x + 220, 378)
+            ctx.moveTo(x, avatarFrameY)
+            ctx.lineTo(x + 220, avatarFrameBottom)
             ctx.stroke()
           }
           ctx.fillStyle = '#fff'
           ctx.font = `900 96px ${RESUME_FONT_FAMILY}`
           ctx.textAlign = 'center'
-          drawCanvasText(ctx, getFirstGrapheme(data.playerName.trim()) || '#', 961, 277, emojiImages)
+          drawCanvasText(
+            ctx,
+            getFirstGrapheme(data.playerName.trim()) || '#',
+            avatarFrameX + avatarFrameWidth / 2,
+            277,
+            emojiImages,
+          )
           ctx.textAlign = 'left'
         }
         ctx.restore()
         ctx.strokeStyle = '#161616'
         ctx.lineWidth = 4
-        roundedRect(ctx, 768, 110, 386, 268, 12)
+        roundedRect(ctx, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, 12)
         ctx.stroke()
         ctx.fillStyle = '#161616'
-        ctx.fillRect(910, 354, 244, 24)
+        ctx.fillRect(avatarLabelX, 354, avatarLabelWidth, 24)
         ctx.fillStyle = '#fff'
         ctx.font = `800 11px ${RESUME_FONT_FAMILY}`
         ctx.fillText('PLAYER ICON', 1066, 370)
@@ -449,9 +498,9 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         discordId: { label: 'DiscordのID', value: data.discordId },
         playStyle: { label: 'プレイスタイル', value: data.playStyle },
         activeTime: { label: '主な活動時間', value: data.activeTime },
-        custom: { label: data.customDetailLabel.trim() || '自由項目', value: data.customDetailValue },
-        custom2: { label: data.customDetailLabel2.trim() || '自由項目 2', value: data.customDetailValue2 },
-        custom3: { label: data.customDetailLabel3.trim() || '自由項目 3', value: data.customDetailValue3 },
+        custom: { label: data.customDetailLabel.trim() || '自由項目A', value: data.customDetailValue },
+        custom2: { label: data.customDetailLabel2.trim() || '自由項目B', value: data.customDetailValue2 },
+        custom3: { label: data.customDetailLabel3.trim() || '自由項目L', value: data.customDetailValue3 },
       }
       const positionedDetails = getDetailLayout(data.selectedDetailKeys).map(({ key, column, row, widthColumns }) => ({
         ...detailMap[key],
@@ -478,21 +527,29 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       })
 
       ctx.fillStyle = '#161616'
-      ctx.fillRect(0, 596, WIDTH, 79)
+      ctx.fillRect(0, 590, WIDTH, 85)
+
       ctx.fillStyle = accent
-      ctx.fillRect(44, 612, 94, 5)
-      ctx.font = `900 12px ${RESUME_FONT_FAMILY}`
-      ctx.fillText('', 44, 632)
-      ctx.fillStyle = '#9b9996'
-      ctx.font = `800 11px ${RESUME_FONT_FAMILY}`
-      ctx.fillText('ひとこと', 44, 638)
+      roundedRect(ctx, 44, 602, 98, 49, 7)
+      ctx.fill()
+      ctx.fillStyle = accentContrast
+      ctx.font = `900 13px ${RESUME_FONT_FAMILY}`
+      ctx.textAlign = 'center'
+      ctx.fillText('ひとこと', 93, 632)
+
+      ctx.fillStyle = '#242424'
+      roundedRect(ctx, 154, 602, 1002, 49, 7)
+      ctx.fill()
       ctx.fillStyle = '#fff'
-      ctx.font = `700 17px ${RESUME_FONT_FAMILY}`
-      drawWrappedText(ctx, data.comment || 'よろしくお願いします！', 160, 628, 850, 25, 2, emojiImages)
-      ctx.fillStyle = '#858079'
-      ctx.font = `600 10px ${RESUME_FONT_FAMILY}`
+      const comment = normalizeComment(data.comment) || 'よろしくお願いします！'
+      ctx.font = `800 18px ${RESUME_FONT_FAMILY}`
+      ctx.textAlign = 'left'
+      drawWrappedText(ctx, comment, 174, 602, 49, 962, 22, 2, emojiImages)
+
+      ctx.fillStyle = '#77736e'
+      ctx.font = `600 9px ${RESUME_FONT_FAMILY}`
       ctx.textAlign = 'right'
-      ctx.fillText('Twemoji graphics: github.com/jdecked/twemoji · CC BY 4.0  ·  コンパス履歴書ジェネレーターV2 by @Ao_Sankaku  ·  https://cpsresume.aosankaku.net', 1156, 668)
+      ctx.fillText('Twemoji graphics: github.com/jdecked/twemoji · CC BY 4.0  ·  コンパス履歴書ジェネレーターV2 by @Ao_Sankaku  ·  https://cpsresume.aosankaku.net', 1156, 669)
       ctx.textAlign = 'left'
 
       if (cancelled) return

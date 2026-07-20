@@ -1,11 +1,19 @@
 import { DEFAULT_DETAIL_KEYS, isDetailKey, limitDetailKeys } from './details'
 import { normalizeThemeHue } from './theme'
-import { initialResumeData, isAvatarFit, type AvatarFit, type ResumeData } from './types'
+import { initialResumeData, isAvatarFit, isAvatarFrame, type AvatarFit, type ResumeData } from './types'
+
+export const COMMENT_MAX_LENGTH = 90
+
+export const normalizeComment = (value: string) => {
+  const [firstLine = '', ...remainingLines] = value.replace(/\r\n?/g, '\n').split('\n')
+  const secondLine = remainingLines.join(' ')
+  return `${firstLine}${remainingLines.length > 0 ? `\n${secondLine}` : ''}`.slice(0, COMMENT_MAX_LENGTH)
+}
 
 type ResumeDataRecord = Record<string, unknown>
 type StringField = Exclude<{
   [K in keyof ResumeData]: ResumeData[K] extends string ? K : never
-}[keyof ResumeData], 'avatarDataUrl' | 'avatarFit'>
+}[keyof ResumeData], 'avatarDataUrl' | 'avatarFrame' | 'avatarFit'>
 
 const stringFields = [
   'playerName',
@@ -40,6 +48,7 @@ const stringFields = [
 const knownResumeKeys = new Set<string>([
   ...stringFields,
   'avatarDataUrl',
+  'avatarFrame',
   'avatarFit',
   'showPlayerIcon',
   'themeHue',
@@ -79,6 +88,7 @@ export const normalizeResumeData = (
     const next = source[key]
     if (typeof next === 'string') normalized[key] = next
   })
+  normalized.comment = normalizeComment(normalized.comment)
 
   normalized.highestRank = readString(source, 'highestRank', readString(source, 'rank', initialResumeData.highestRank))
   normalized.seasonHighestRank = readString(
@@ -92,6 +102,7 @@ export const normalizeResumeData = (
     readString(source, 'iconCount', initialResumeData.goldIconCount),
   )
   normalized.xId = readString(source, 'xId', readString(source, 'snsId', initialResumeData.xId))
+  normalized.avatarFrame = isAvatarFrame(source.avatarFrame) ? source.avatarFrame : initialResumeData.avatarFrame
   normalized.avatarFit = isAvatarFit(source.avatarFit) ? source.avatarFit : fallbackAvatarFit
   normalized.showPlayerIcon = typeof source.showPlayerIcon === 'boolean'
     ? source.showPlayerIcon

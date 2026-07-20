@@ -14,9 +14,10 @@ import StorageRoundedIcon from '@mui/icons-material/StorageRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { hero, ranks } from '../data/main'
 import { countDetailSlots, detailOptions, DETAIL_LIMIT, getDetailSlots, type DetailKey } from '../details'
+import { COMMENT_MAX_LENGTH, normalizeComment } from '../resumeData'
 import { getResumeParseErrorMessage, parseResumeText, serializeResumeData } from '../resumeJson'
 import { getThemeColor, getThemeContrastColor } from '../theme'
-import type { AvatarFit, CacheStatus, ResumeData, Role } from '../types'
+import type { AvatarFit, AvatarFrame, CacheStatus, ResumeData, Role } from '../types'
 
 type Props = {
   value: ResumeData
@@ -32,6 +33,20 @@ const roles: { key: Role; label: string }[] = [
   { key: 'gunner', label: 'ガンナー' },
   { key: 'tank', label: 'タンク' },
   { key: 'sprinter', label: 'スプリンター' },
+]
+
+const avatarFrameOptions: Array<{ value: AvatarFrame; label: string; description: string; recommended?: boolean }> = [
+  {
+    value: 'square',
+    label: '1:1（正方形）',
+    description: '一般的なプロフィール画像向け。右寄せで表示します。',
+    recommended: true,
+  },
+  {
+    value: 'landscape',
+    label: '横長',
+    description: 'これまでと同じ横長の枠で表示します。',
+  },
 ]
 
 const avatarFitOptions: Array<{ value: AvatarFit; label: string; description: string; recommended?: boolean }> = [
@@ -392,7 +407,7 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
         <div className="detail-picker-heading">
           <div>
             <h3 id="detail-picker-title"><span>02</span> 履歴書に乗せる追加情報</h3>
-            <p id="detail-picker-hint">右下へ載せる項目を0〜6枠分選んでください。自由項目3は横長で2枠使用します。</p>
+            <p id="detail-picker-hint">右下へ載せる項目を0〜6枠分選んでください。自由項目Lは横長で2枠使用します。</p>
           </div>
           <output className="detail-count" aria-live="polite">
             <strong>{selectedDetailSlots}</strong> / {DETAIL_LIMIT}
@@ -444,9 +459,13 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
             </label>
             <label className={`field${isDetailEnabled('gender') ? '' : ' field-disabled'}`}>
               <span>性別</span>
-              <select disabled={!isDetailEnabled('gender')} value={value.gender} onChange={(event) => update('gender', event.target.value)}>
-                {['未回答', '男性', '女性', 'その他'].map((item) => <option key={item}>{item}</option>)}
-              </select>
+              <input
+                disabled={!isDetailEnabled('gender')}
+                value={value.gender}
+                maxLength={12}
+                placeholder="例：男・女・♂・♀"
+                onChange={(event) => update('gender', event.target.value)}
+              />
             </label>
             <label className={`field${isDetailEnabled('accountLevel') ? '' : ' field-disabled'}`}>
               <span>アカウントレベル</span>
@@ -553,9 +572,9 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
           </div>
           <div className={`custom-detail-fields${isDetailEnabled('custom') || isDetailEnabled('custom2') || isDetailEnabled('custom3') ? '' : ' fields-disabled'}`}>
             {([
-              ['custom', '自由項目 1', 'customDetailLabel', 'customDetailValue', 28],
-              ['custom2', '自由項目 2', 'customDetailLabel2', 'customDetailValue2', 28],
-              ['custom3', '自由項目 3（横長・2枠使用）', 'customDetailLabel3', 'customDetailValue3', 56],
+              ['custom', '自由項目A', 'customDetailLabel', 'customDetailValue', 28],
+              ['custom2', '自由項目B', 'customDetailLabel2', 'customDetailValue2', 28],
+              ['custom3', '自由項目L（横長・2枠使用）', 'customDetailLabel3', 'customDetailValue3', 56],
             ] as const).map(([detailKey, legend, labelKey, valueKey, valueMaxLength]) => {
               const enabled = isDetailEnabled(detailKey)
               return (
@@ -633,8 +652,13 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
         <div className="field-grid spaced-grid">
           <label className="field field-wide">
             <span>ひとこと</span>
-            <textarea value={value.comment} maxLength={90} rows={3} onChange={(e) => update('comment', e.target.value)} />
-            <small>{value.comment.length} / 90</small>
+            <textarea
+              value={value.comment}
+              maxLength={COMMENT_MAX_LENGTH}
+              rows={2}
+              onChange={(e) => update('comment', normalizeComment(e.target.value))}
+            />
+            <small>{value.comment.length} / {COMMENT_MAX_LENGTH}</small>
           </label>
         </div>
       </section>
@@ -643,7 +667,7 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
         <div className="avatar-heading">
           <div className="avatar-copy">
             <h3><span>04</span> プレイヤーアイコン</h3>
-            <p>画像を選び、履歴書の枠内でどのように見せるか選択できます。</p>
+            <p>画像を選び、枠の形と画像の見せ方を選択できます。</p>
           </div>
           <div className="avatar-actions">
             <button className="upload-button" type="button" disabled={!value.showPlayerIcon} onClick={() => fileRef.current?.click()}>
@@ -657,11 +681,32 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
             <input ref={fileRef} hidden disabled={!value.showPlayerIcon} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatar} />
           </div>
         </div>
-        <fieldset className="avatar-fit-fieldset" disabled={!value.showPlayerIcon}>
+        <fieldset className="avatar-choice-fieldset" disabled={!value.showPlayerIcon}>
+          <legend>枠の形</legend>
+          <div className="avatar-choice-options">
+            {avatarFrameOptions.map(({ value: frame, label, description, recommended }) => (
+              <label className={`avatar-choice-option${value.avatarFrame === frame ? ' selected' : ''}`} key={frame}>
+                <input
+                  type="radio"
+                  name="avatarFrame"
+                  value={frame}
+                  checked={value.avatarFrame === frame}
+                  onChange={() => update('avatarFrame', frame)}
+                />
+                <span className={`avatar-choice-demo avatar-frame-demo avatar-frame-demo-${frame}`} aria-hidden="true"><i /></span>
+                <span className="avatar-choice-copy">
+                  <strong>{label}{recommended && <b>標準</b>}</strong>
+                  <small>{description}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset className="avatar-choice-fieldset" disabled={!value.showPlayerIcon}>
           <legend>画像の見せ方</legend>
-          <div className="avatar-fit-options">
+          <div className="avatar-choice-options">
             {avatarFitOptions.map(({ value: fit, label, description, recommended }) => (
-              <label className={`avatar-fit-option${value.avatarFit === fit ? ' selected' : ''}`} key={fit}>
+              <label className={`avatar-choice-option${value.avatarFit === fit ? ' selected' : ''}`} key={fit}>
                 <input
                   type="radio"
                   name="avatarFit"
@@ -669,8 +714,8 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
                   checked={value.avatarFit === fit}
                   onChange={() => update('avatarFit', fit)}
                 />
-                <span className={`avatar-fit-demo avatar-fit-demo-${fit}`} aria-hidden="true"><i /></span>
-                <span className="avatar-fit-copy">
+                <span className={`avatar-choice-demo avatar-fit-demo avatar-fit-demo-${fit}`} aria-hidden="true"><i /></span>
+                <span className="avatar-choice-copy">
                   <strong>{label}{recommended && <b>おすすめ</b>}</strong>
                   <small>{description}</small>
                 </span>
