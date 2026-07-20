@@ -47,6 +47,16 @@ const APPLICATION_CODE_PATTERN = /^[A-Za-z]-[A-Za-z]{4}$/
 const APPLICATION_CODE_WARNING_ID = 'application-code-warning'
 const FRIEND_CODE_PATTERN = /^[0-9]{10}$/
 const FRIEND_CODE_WARNING_ID = 'friend-code-warning'
+const ICON_COUNT_HINT_ID = 'icon-count-hint'
+
+const sanitizeIconCount = (next: string) => {
+  const normalized = next.replace(/[~〜]/g, '～').replace(/\+/g, '＋')
+  const digits = normalized.replace(/[^0-9]/g, '').slice(0, 4)
+  if (normalized.includes('～') && digits) return `${digits}～`
+  if (normalized.includes('＋') && digits) return `${digits}＋`
+  if (normalized.includes('↑') && digits) return `${digits}↑`
+  return digits
+}
 
 type ThemeColorControlProps = {
   hue: number
@@ -415,6 +425,9 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
             </div>
             <fieldset disabled={!isDetailEnabled('iconCounts')} className={`field field-wide icon-count-fieldset${isDetailEnabled('iconCounts') ? '' : ' field-disabled'}`}>
               <legend>所持アイコン数</legend>
+              <p className="icon-count-hint" id={ICON_COUNT_HINT_ID}>
+                正確な個数が分からない場合は、「12～」「12＋」「12↑」のように入力できます。0または未記入のアイコンは履歴書に表示されません。
+              </p>
               <div className="icon-count-input-grid">
                 {([
                   ['goldIconCount', '金', 'gold'],
@@ -427,10 +440,14 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
                     <span className="icon-count-input-copy">{label}</span>
                     <input
                       aria-label={`${label}アイコン数`}
-                      inputMode="numeric"
+                      aria-describedby={ICON_COUNT_HINT_ID}
+                      inputMode="text"
                       value={value[key]}
-                      maxLength={4}
-                      onChange={(event) => update(key, event.target.value.replace(/\D/g, ''))}
+                      maxLength={5}
+                      onBlur={() => {
+                        if (!/[0-9]/.test(value[key])) update(key, '')
+                      }}
+                      onChange={(event) => update(key, sanitizeIconCount(event.target.value))}
                     />
                   </label>
                 ))}

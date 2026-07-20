@@ -7,7 +7,7 @@ export const detailOptions = [
   { key: 'friendCode', label: 'フレンドコード', description: 'フレンド申請用コードを掲載' },
   { key: 'guild', label: '所属ギルド', description: '所属先を掲載' },
   { key: 'seriousLevel', label: 'ガチ度', description: '炎の5段階でプレイ熱量を掲載' },
-  { key: 'iconCounts', label: 'アイコン数', description: '金・銀・銅・大会を角型アイコンで表示' },
+  { key: 'iconCounts', label: 'アイコン数', description: '金・銀・銅・大会の所持数を掲載' },
   { key: 'favoriteHero', label: '推し', description: '推しヒーローを掲載' },
   { key: 'playHistory', label: 'コンパス歴', description: 'プレイ歴を掲載' },
   { key: 'xId', label: 'X（Twitter）のID', description: 'X（Twitter）のIDを掲載' },

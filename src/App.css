@@ -84,21 +84,22 @@ main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px
 .heat-scale-labels { margin-top: 5px; display: flex; justify-content: space-between; color: #85868d; font-size: 9px; font-weight: 800; }
 
 .icon-count-fieldset { margin: 0; padding: 0; border: 0; }
-.icon-count-fieldset legend { margin-bottom: 9px; padding: 0; color: #b9b2aa; font-size: 12px; font-weight: 800; }
+.icon-count-fieldset legend { margin-bottom: 7px; padding: 0; color: #b9b2aa; font-size: 13px; font-weight: 900; }
+.icon-count-hint { margin: 0 0 11px; color: #aaa39a; font-size: 11px; font-weight: 650; line-height: 1.6; }
 .icon-count-input-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; }
-.icon-count-input { min-width: 0; min-height: 88px; padding: 11px; display: grid; grid-template-columns: 40px minmax(0, 1fr); grid-template-rows: auto 40px; align-items: center; gap: 6px 10px; border: 1px solid #3e3f46; background: #101115; }
+.icon-count-input { min-width: 0; min-height: 96px; padding: 12px; display: grid; grid-template-columns: 44px minmax(0, 1fr); grid-template-rows: auto 42px; align-items: center; gap: 7px 10px; border: 1px solid #51525a; background: #17181c; }
 .icon-count-input:focus-within { border-color: var(--red); box-shadow: inset 3px 0 var(--red); }
-.icon-count-input-copy { color: #d1cbc2; font-size: 14px; font-weight: 900; }
-.icon-count-input input { grid-column: 2; width: 100%; height: 40px; padding: 6px 8px; border: 1px solid #45464d; background: var(--surface-input); color: var(--ink); font-size: 18px; font-weight: 900; text-align: center; }
+.icon-count-input-copy { color: #f1ede6; font-size: 15px; font-weight: 900; }
+.icon-count-input input { grid-column: 2; width: 100%; min-width: 0; height: 42px; padding: 6px 1px; border: 1px solid #666872; background: #0d0e11; color: #fff; font-size: 18px; font-weight: 900; text-align: center; }
 .icon-count-input input:focus { border-color: var(--red); outline: 0; }
 .icon-count-fieldset:disabled .icon-count-input { cursor: not-allowed; border-color: #34353a; }
-.award-icon { grid-row: 1 / 3; width: 40px; height: 40px; display: grid; place-items: center; border: 2px solid var(--award-dark); background: var(--award); }
+.award-icon { grid-row: 1 / 3; width: 44px; height: 44px; display: grid; place-items: center; border: 2px solid var(--award-dark); background: var(--award); }
 .award-icon::after { display: none; }
-.award-icon i { width: 100%; height: 100%; display: grid; place-items: center; border: 0; background: transparent; color: var(--award-ink); font-size: 13px; font-style: normal; font-weight: 950; text-shadow: none; }
-.award-gold { --award: #c79b2a; --award-dark: #80600d; --award-ink: #332500; }
-.award-silver { --award: #9ea7b1; --award-dark: #5f6872; --award-ink: #20262c; }
-.award-bronze { --award: #a96740; --award-dark: #6c3b22; --award-ink: #2e160c; }
-.award-tournament { --award: #7b59b9; --award-dark: #4d347d; --award-ink: #1f1038; }
+.award-icon i { width: 100%; height: 100%; display: grid; place-items: center; border: 0; background: transparent; color: var(--award-ink); font-size: 15px; font-style: normal; font-weight: 950; text-shadow: none; }
+.award-gold { --award: #f2c94c; --award-dark: #8a6500; --award-ink: #211800; }
+.award-silver { --award: #d9e0e6; --award-dark: #697681; --award-ink: #141a1f; }
+.award-bronze { --award: #d48759; --award-dark: #783d1e; --award-ink: #241007; }
+.award-tournament { --award: #6842a5; --award-dark: #351c61; --award-ink: #fff; }
 
 .detail-picker-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .detail-picker-heading h3 { margin-bottom: 7px; }
@@ -245,7 +246,8 @@ footer strong { color: #fff; font-size: 13px; }
 :root[data-theme="light"] .heat-selector button:disabled { color: #aaa59c; }
 :root[data-theme="light"] .icon-count-input { border-color: #bbb6ad; background: #f5f2eb; }
 :root[data-theme="light"] .icon-count-input-copy { color: #4f4b45; }
-:root[data-theme="light"] .icon-count-input input { border-color: #aaa59c; }
+:root[data-theme="light"] .icon-count-hint { color: #625e58; }
+:root[data-theme="light"] .icon-count-input input { border-color: #8f8a81; background: #fff; color: #202126; }
 :root[data-theme="light"] .detail-count { border-color: #bbb6ad; background: #f3f0e9; color: #625f59; }
 :root[data-theme="light"] .detail-option { border-color: #c1bcb3; background: #f8f5ee; }
 :root[data-theme="light"] .detail-option:hover { border-color: #817d76; }

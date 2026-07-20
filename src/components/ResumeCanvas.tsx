@@ -17,6 +17,11 @@ const RESUME_FONT_STATIC_TEXT = '#コンパス 履歴書 よみ 呼び方 最高
 const roleIcons: Record<Role, string> = { attacker: attackerIcon, gunner: gunnerIcon, tank: tankIcon, sprinter: sprinterIcon }
 const roleColors: Record<Role, string> = { attacker: '#ff3855', gunner: '#2ccf75', tank: '#ffbd27', sprinter: '#4c6fff' }
 const roleLabels: Record<Role, string> = { attacker: 'ATTACKER', gunner: 'GUNNER', tank: 'TANK', sprinter: 'SPRINTER' }
+const CANVAS_RENDER_REVISION = import.meta.hot
+  ? ((import.meta.hot.data.canvasRenderRevision as number | undefined) ?? 0) + 1
+  : 0
+
+if (import.meta.hot) import.meta.hot.data.canvasRenderRevision = CANVAS_RENDER_REVISION
 
 type Props = {
   data: ResumeData
@@ -127,10 +132,10 @@ const drawWrappedText = (
 }
 
 const awardIconStyles = [
-  { key: 'gold', mark: '金', base: '#c79b2a', dark: '#80600d', ink: '#332500' },
-  { key: 'silver', mark: '銀', base: '#9ea7b1', dark: '#5f6872', ink: '#20262c' },
-  { key: 'bronze', mark: '銅', base: '#a96740', dark: '#6c3b22', ink: '#2e160c' },
-  { key: 'tournament', mark: '大', base: '#7b59b9', dark: '#4d347d', ink: '#1f1038' },
+  { key: 'gold', mark: '金', base: '#f2c94c', dark: '#8a6500', ink: '#211800' },
+  { key: 'silver', mark: '銀', base: '#d9e0e6', dark: '#697681', ink: '#141a1f' },
+  { key: 'bronze', mark: '銅', base: '#d48759', dark: '#783d1e', ink: '#241007' },
+  { key: 'tournament', mark: '大', base: '#6842a5', dark: '#351c61', ink: '#fff' },
 ] as const
 
 const drawIconCounts = (
@@ -140,26 +145,50 @@ const drawIconCounts = (
   y: number,
   maxWidth: number,
 ) => {
-  const slotWidth = maxWidth / 4
-  awardIconStyles.forEach((style, index) => {
-    const tileX = x + index * slotWidth
+  const visibleIcons = awardIconStyles
+    .map((style, index) => ({ ...style, count: counts[index] || '0' }))
+    .filter(({ count }) => /[1-9]/.test(count))
+  if (visibleIcons.length === 0) return
+  let tileSize = visibleIcons.length >= 4 ? 18 : 20
+  let countSize = visibleIcons.length <= 2 ? 22 : visibleIcons.length === 3 ? 19 : 17
+  const minimumItemGap = 6
+  const measureItems = () => {
+    ctx.font = `900 ${countSize}px ${RESUME_FONT_FAMILY}`
+    return visibleIcons.map(({ count }) => tileSize + 4 + ctx.measureText(count).width)
+  }
+  let itemWidths = measureItems()
+  const getRequiredWidth = () => itemWidths.reduce((total, width) => total + width, 0)
+    + minimumItemGap * (visibleIcons.length - 1)
+  while (getRequiredWidth() > maxWidth && countSize > 8) {
+    countSize -= 1
+    itemWidths = measureItems()
+  }
+  while (getRequiredWidth() > maxWidth && tileSize > 12) {
+    tileSize -= 1
+    itemWidths = measureItems()
+  }
+  const unusedWidth = maxWidth - itemWidths.reduce((total, width) => total + width, 0)
+  const itemGap = visibleIcons.length > 1
+    ? Math.max(0, Math.min(24, unusedWidth / (visibleIcons.length - 1)))
+    : 0
+  const countBaseline = Math.min(21, countSize + 1)
+  let tileX = x
+  visibleIcons.forEach((style, index) => {
     const tileY = y
-    const tileSize = 18
     ctx.fillStyle = style.base
     ctx.fillRect(tileX, tileY, tileSize, tileSize)
     ctx.strokeStyle = style.dark
     ctx.lineWidth = 1
     ctx.strokeRect(tileX + .5, tileY + .5, tileSize - 1, tileSize - 1)
     ctx.fillStyle = style.ink
-    ctx.font = `900 9px ${RESUME_FONT_FAMILY}`
+    ctx.font = `900 ${tileSize === 18 ? 9 : 10}px ${RESUME_FONT_FAMILY}`
     ctx.textAlign = 'center'
-    ctx.fillText(style.mark, tileX + tileSize / 2, tileY + 12.5)
+    ctx.fillText(style.mark, tileX + tileSize / 2, tileY + tileSize * .7)
     ctx.textAlign = 'left'
     ctx.fillStyle = '#161616'
-    ctx.font = `900 12px ${RESUME_FONT_FAMILY}`
-    const count = counts[index] || '0'
-    fitText(ctx, count, slotWidth - tileSize - 4, 12, 900, 8)
-    ctx.fillText(count, tileX + tileSize + 3, tileY + 13)
+    ctx.font = `900 ${countSize}px ${RESUME_FONT_FAMILY}`
+    ctx.fillText(style.count, tileX + tileSize + 4, tileY + countBaseline)
+    tileX += itemWidths[index] + itemGap
   })
 }
 
@@ -198,10 +227,12 @@ const drawSeriousLevel = (
 function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [renderedData, setRenderedData] = useState<ResumeData | null>(null)
+  const renderRevision = CANVAS_RENDER_REVISION
   const isReady = renderedData === data
 
   useEffect(() => {
     let cancelled = false
+    setRenderedData(null)
 
     const draw = async () => {
       const canvas = canvasRef.current
@@ -433,7 +464,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       cancelled = true
       window.cancelAnimationFrame(frame)
     }
-  }, [data])
+  }, [data, renderRevision])
 
   const download = () => {
     const canvas = canvasRef.current
