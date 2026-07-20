@@ -18,7 +18,10 @@ const roleIcons: Record<Role, string> = { attacker: attackerIcon, gunner: gunner
 const roleColors: Record<Role, string> = { attacker: '#ff3855', gunner: '#2ccf75', tank: '#ffbd27', sprinter: '#4c6fff' }
 const roleLabels: Record<Role, string> = { attacker: 'ATTACKER', gunner: 'GUNNER', tank: 'TANK', sprinter: 'SPRINTER' }
 
-type Props = { data: ResumeData }
+type Props = {
+  data: ResumeData
+  headingId?: string
+}
 
 const imageCache = new Map<string, Promise<HTMLImageElement>>()
 
@@ -192,7 +195,7 @@ const drawSeriousLevel = (
   }
 }
 
-function ResumeCanvas({ data }: Props) {
+function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [renderedData, setRenderedData] = useState<ResumeData | null>(null)
   const isReady = renderedData === data
@@ -449,11 +452,11 @@ function ResumeCanvas({ data }: Props) {
   }
 
   return (
-    <section className="preview-panel" aria-labelledby="preview-title">
+    <section className="preview-panel" aria-labelledby={headingId}>
       <div className="preview-heading">
         <div>
           <span className="eyebrow">LIVE PREVIEW</span>
-          <h2 id="preview-title">完成イメージ</h2>
+          <h2 id={headingId}>完成イメージ</h2>
         </div>
         <button className="download-button" type="button" onClick={download} disabled={!isReady}>
           <DownloadRoundedIcon /> PNGで保存

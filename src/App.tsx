@@ -5,6 +5,7 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import './App.css'
 import Appbar from './components/Appbar'
 import Input from './components/Input'
@@ -17,6 +18,7 @@ import { getThemeColor, getThemeContrastColor, THEME_LIGHTNESS, THEME_SATURATION
 
 const STORAGE_KEY = 'compass-resume-v2'
 const SITE_THEME_STORAGE_KEY = 'compass-site-theme'
+const STACKED_WORKSPACE_QUERY = '(max-width:1180px)'
 type SiteTheme = 'dark' | 'light'
 type StoredResumeData = Partial<ResumeData> & { rank?: string; enjoyRank?: string; iconCount?: string }
 
@@ -61,10 +63,13 @@ function getInitialData(): ResumeData {
 function App() {
   const [resume, setResume] = useState<ResumeData>(getInitialData)
   const [siteTheme, setSiteTheme] = useState<SiteTheme>(getInitialSiteTheme)
+  const showBottomPreview = useMediaQuery(STACKED_WORKSPACE_QUERY)
   const deferredResume = useDeferredValue(resume)
   const [cacheStatus, setCacheStatus] = useState<CacheStatus>('saved')
   const [resetDialogOpen, setResetDialogOpen] = useState(false)
+  const [storageWarningDialogOpen, setStorageWarningDialogOpen] = useState(false)
   const resetCancelButtonRef = useRef<HTMLButtonElement>(null)
+  const storageWarningCloseButtonRef = useRef<HTMLButtonElement>(null)
   const muiTheme = useMemo(() => createTheme({
     palette: {
       mode: siteTheme,
@@ -158,10 +163,22 @@ function App() {
           </section>
 
           <div className="workspace">
-            <Input value={resume} onChange={setResume} onReset={reset} onSaveJson={saveJson} cacheStatus={cacheStatus} />
-            <div className="preview-column">
+            <Input
+              value={resume}
+              onChange={setResume}
+              onReset={reset}
+              onSaveJson={saveJson}
+              onShowStorageWarning={() => setStorageWarningDialogOpen(true)}
+              cacheStatus={cacheStatus}
+            />
+            <div className="preview-column preview-column-primary">
               <ResumeCanvas data={deferredResume} />
             </div>
+            {showBottomPreview && (
+              <div className="preview-column preview-column-bottom">
+                <ResumeCanvas data={deferredResume} headingId="preview-title-bottom" />
+              </div>
+            )}
           </div>
         </main>
         <footer>
@@ -194,6 +211,33 @@ function App() {
             </button>
             <button className="dialog-button danger" type="button" onClick={confirmReset}>
               初期値に戻す
+            </button>
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          id="storage-warning-dialog"
+          className="reset-dialog storage-warning-dialog"
+          open={storageWarningDialogOpen}
+          onClose={() => setStorageWarningDialogOpen(false)}
+          TransitionProps={{ onEntered: () => storageWarningCloseButtonRef.current?.focus() }}
+          aria-labelledby="storage-warning-dialog-title"
+          aria-describedby="storage-warning-dialog-description"
+        >
+          <DialogTitle id="storage-warning-dialog-title">ブラウザに自動保存できません</DialogTitle>
+          <DialogContent>
+            <p id="storage-warning-dialog-description">
+              プライベートウィンドウ、ブラウザのサイトデータ・キャッシュ保存の無効化、または保存容量不足などにより、入力内容をブラウザへ保存できません。
+            </p>
+            <p>このページを閉じる前に、入力欄の一番下にある「JSONで保存」からバックアップしてください。</p>
+          </DialogContent>
+          <DialogActions>
+            <button
+              ref={storageWarningCloseButtonRef}
+              className="dialog-button danger"
+              type="button"
+              onClick={() => setStorageWarningDialogOpen(false)}
+            >
+              内容を確認しました
             </button>
           </DialogActions>
         </Dialog>

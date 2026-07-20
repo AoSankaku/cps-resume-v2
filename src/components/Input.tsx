@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
 import AddPhotoAlternateRoundedIcon from '@mui/icons-material/AddPhotoAlternateRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded'
 import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded'
 import SaveAltRoundedIcon from '@mui/icons-material/SaveAltRounded'
 import StorageRoundedIcon from '@mui/icons-material/StorageRounded'
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { hero, ranks } from '../data/main'
 import { detailOptions, DETAIL_LIMIT, type DetailKey } from '../details'
 import { getThemeColor, getThemeContrastColor } from '../theme'
@@ -17,6 +19,7 @@ type Props = {
   onChange: (next: ResumeData) => void
   onReset: () => void
   onSaveJson: () => void
+  onShowStorageWarning: () => void
   cacheStatus: CacheStatus
 }
 
@@ -135,7 +138,7 @@ function ThemeColorControl({ hue, onCommit }: ThemeColorControlProps) {
   )
 }
 
-function Input({ value, onChange, onReset, onSaveJson, cacheStatus }: Props) {
+function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cacheStatus }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const heroOptions = useMemo(
     () => roles.flatMap(({ key, label }) => hero[key].map((item) => ({ ...item, role: key, roleLabel: label }))),
@@ -192,17 +195,8 @@ function Input({ value, onChange, onReset, onSaveJson, cacheStatus }: Props) {
         <div>
           <span className="eyebrow">PLAYER DATA</span>
           <h2>プロフィールを入力</h2>
-          <output className={`cache-status cache-status-${cacheStatus}`} aria-live="polite">
-            <StorageRoundedIcon aria-hidden="true" fontSize="inherit" />
-            {cacheStatus === 'saved' && 'ブラウザに自動保存済み'}
-            {cacheStatus === 'without-image' && '画像を除いて自動保存済み'}
-            {cacheStatus === 'error' && 'ブラウザに保存できません'}
-          </output>
         </div>
         <div className="editor-heading-actions">
-          <button className="text-button json-save-button" type="button" onClick={onSaveJson}>
-            <SaveAltRoundedIcon fontSize="small" /> JSONで保存
-          </button>
           <button className="text-button" type="button" onClick={onReset}>
             <RestartAltRoundedIcon fontSize="small" /> 初期値に戻す
           </button>
@@ -473,6 +467,56 @@ function Input({ value, onChange, onReset, onSaveJson, cacheStatus }: Props) {
       </section>
 
       <ThemeColorControl hue={value.themeHue} onCommit={(nextHue) => update('themeHue', nextHue)} />
+
+      <section className="form-section editor-save-section" aria-labelledby="editor-save-title">
+        <div className="editor-save-heading">
+          <div>
+            <h3 id="editor-save-title"><span>06</span> 入力内容を保存</h3>
+            <p>
+              {cacheStatus === 'error'
+                ? '現在はブラウザへ自動保存できません。JSONファイルで手元に残してください。'
+                : '入力内容はこのブラウザへ自動保存されます。JSONファイルでも手元に残せます。'}
+            </p>
+          </div>
+        </div>
+        <div className="editor-save-grid">
+          {cacheStatus === 'error' ? (
+            <button
+              className="storage-warning-button"
+              type="button"
+              aria-haspopup="dialog"
+              aria-controls="storage-warning-dialog"
+              onClick={onShowStorageWarning}
+            >
+              <WarningAmberRoundedIcon aria-hidden="true" />
+              <span>
+                <strong>ブラウザに保存できません</strong>
+                <small>入力内容が失われる可能性があります。詳細を確認</small>
+              </span>
+              <ChevronRightRoundedIcon className="storage-warning-chevron" aria-hidden="true" />
+            </button>
+          ) : (
+            <output className={`cache-status cache-status-${cacheStatus}`} aria-live="polite">
+              <StorageRoundedIcon aria-hidden="true" />
+              <span>
+                <strong>{cacheStatus === 'saved' ? 'ブラウザに自動保存済み' : '画像を除いて自動保存済み'}</strong>
+                <small>
+                  {cacheStatus === 'saved'
+                    ? 'このブラウザ内に入力内容を保持しています'
+                    : '画像が大きいため、プロフィール項目のみ保存しています'}
+                </small>
+              </span>
+            </output>
+          )}
+          <button className="json-save-button" type="button" onClick={onSaveJson}>
+            <SaveAltRoundedIcon aria-hidden="true" />
+            <span>
+              <strong>JSONで保存</strong>
+              <small>入力内容をファイルでバックアップ</small>
+            </span>
+          </button>
+        </div>
+      </section>
     </div>
   )
 }
