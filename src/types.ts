@@ -63,7 +63,7 @@ export const initialResumeData: ResumeData = {
   customDetailValue2: 'でらクランクストリート',
   selectedDetailKeys: ['favoriteHero', 'seriousLevel', 'playHistory', 'guild', 'friendCode', 'accountLevel'],
   heroSelections: ['青春 アリス', '桜華 忠臣', 'リリカ'],
-  comment: 'いっしょにバトルを楽しめるフレンド募集中！気軽に声をかけてください。',
+  comment: 'いっしょにバトルを楽しめるフレンド募集中！気軽に声をかけてください👍️',
   playStyle: '固定も野良も楽しみます',
   activeTime: '平日 21:00〜 / 休日',
   avatarDataUrl: '',

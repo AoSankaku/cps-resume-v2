@@ -40,3 +40,7 @@ bun run build
 - `src/config/site.ts`: アプリ内共有URL
 - `index.html`: canonical、OGP、構造化データ
 - `public/robots.txt` / `public/sitemap.xml`: クローラー向けURL
+
+## サードパーティ素材
+
+生成画像内の絵文字には [Twemoji](https://github.com/jdecked/twemoji) を使用しています。Twemojiのグラフィックは [Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/) の下で提供されています。グラフィック自体への変更は行わず、SVGをCanvasへ描画しています。

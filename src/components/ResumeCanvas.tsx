@@ -5,6 +5,14 @@ import attackerIcon from '../assets/roles/attacker.png'
 import gunnerIcon from '../assets/roles/gunner.png'
 import tankIcon from '../assets/roles/tank.png'
 import sprinterIcon from '../assets/roles/sprinter.png'
+import {
+  drawCanvasText,
+  getFirstGrapheme,
+  getTwemojiUrls,
+  measureCanvasText,
+  splitGraphemes,
+  type EmojiImageMap,
+} from '../canvasText'
 import type { DetailKey } from '../details'
 import type { ResumeData, Role } from '../types'
 import { getThemeColor, getThemeContrastColor } from '../theme'
@@ -62,6 +70,20 @@ const loadResumeFonts = (data: ResumeData) => {
   )
 }
 
+const loadTwemojiImages = async (data: ResumeData): Promise<EmojiImageMap> => {
+  const userText = Object.entries(data).flatMap(([key, value]) => {
+    if (key === 'avatarDataUrl') return []
+    if (typeof value === 'string') return [value]
+    if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string')
+    return []
+  }).join('')
+  const entries = await Promise.all(getTwemojiUrls(userText).map(async (url) => {
+    const image = await loadImage(url).catch(() => null)
+    return [url, image] as const
+  }))
+  return new Map(entries.filter((entry): entry is readonly [string, HTMLImageElement] => entry[1] !== null))
+}
+
 const findRole = (heroName: string): Role => {
   const keys = Object.keys(hero) as Role[]
   return keys.find((key) => hero[key].some((item) => item.fullName === heroName)) ?? 'attacker'
@@ -83,7 +105,7 @@ const fitText = (
   let size = initialSize
   const effectiveMinimumSize = Math.min(initialSize, minimumSize)
   ctx.font = `${weight} ${size}px ${RESUME_FONT_FAMILY}`
-  while (ctx.measureText(text).width > maxWidth && size > effectiveMinimumSize) {
+  while (measureCanvasText(ctx, text) > maxWidth && size > effectiveMinimumSize) {
     size -= 1
     ctx.font = `${weight} ${size}px ${RESUME_FONT_FAMILY}`
   }
@@ -113,13 +135,14 @@ const drawWrappedText = (
   maxWidth: number,
   lineHeight: number,
   maxLines: number,
+  emojiImages: EmojiImageMap,
 ) => {
-  const characters = [...text]
+  const characters = splitGraphemes(text)
   const lines: string[] = []
   let line = ''
   for (const character of characters) {
     const candidate = line + character
-    if (ctx.measureText(candidate).width > maxWidth && line) {
+    if (measureCanvasText(ctx, candidate) > maxWidth && line) {
       lines.push(line)
       line = character
       if (lines.length === maxLines - 1) break
@@ -128,7 +151,7 @@ const drawWrappedText = (
     }
   }
   if (line && lines.length < maxLines) lines.push(line)
-  lines.forEach((item, index) => ctx.fillText(item, x, y + index * lineHeight))
+  lines.forEach((item, index) => drawCanvasText(ctx, item, x, y + index * lineHeight, emojiImages))
 }
 
 const awardIconStyles = [
@@ -239,7 +262,11 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       const ctx = canvas?.getContext('2d')
       if (!canvas || !ctx) return
 
-      const [, icons] = await Promise.all([loadResumeFonts(data), roleIconImages])
+      const [, icons, emojiImages] = await Promise.all([
+        loadResumeFonts(data),
+        roleIconImages,
+        loadTwemojiImages(data),
+      ])
       const avatar = data.showPlayerIcon && data.avatarDataUrl ? await loadImage(data.avatarDataUrl).catch(() => null) : null
       if (cancelled) return
       const accent = getThemeColor(data.themeHue)
@@ -276,10 +303,10 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       ctx.fillRect(44, 115, 7, 92)
       ctx.fillStyle = '#77736d'
       ctx.font = `700 16px ${RESUME_FONT_FAMILY}`
-      ctx.fillText(data.pronunciation || 'よみ・呼び方', 72, 130)
+      drawCanvasText(ctx, data.pronunciation || 'よみ・呼び方', 72, 130, emojiImages)
       ctx.fillStyle = '#161616'
       fitText(ctx, data.playerName || 'NO NAME', 700, 60, 900)
-      ctx.fillText(data.playerName || 'NO NAME', 70, 193)
+      drawCanvasText(ctx, data.playerName || 'NO NAME', 70, 193, emojiImages)
 
       const metrics: Array<[string, string]> = [
         ...(data.highestRank ? [['最高ランク', data.highestRank] as [string, string]] : []),
@@ -299,12 +326,12 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         ctx.fillText(label, x + 18, metricY + 23)
         ctx.fillStyle = index === 0 ? '#fff' : '#161616'
         fitText(ctx, value, metricWidth - 36, 35, 900)
-        ctx.fillText(value, x + 18, metricY + 64)
+        drawCanvasText(ctx, value, x + 18, metricY + 64, emojiImages)
       })
 
       ctx.fillStyle = '#161616'
       ctx.font = `900 16px ${RESUME_FONT_FAMILY}`
-      ctx.fillText('MAIN HEROES / 使用ヒーロー', 44, 378)
+      ctx.fillText('使用ヒーロー', 44, 378)
       const selectedHeroes = data.heroSelections.length > 0 ? data.heroSelections.slice(0, 6) : ['']
       const heroCount = selectedHeroes.length
       const twoColumnHeroes = heroCount >= 4
@@ -372,7 +399,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
           ctx.fillStyle = '#fff'
           ctx.font = `900 96px ${RESUME_FONT_FAMILY}`
           ctx.textAlign = 'center'
-          ctx.fillText(data.playerName.trim().slice(0, 1) || '#', 961, 277)
+          drawCanvasText(ctx, getFirstGrapheme(data.playerName.trim()) || '#', 961, 277, emojiImages)
           ctx.textAlign = 'left'
         }
         ctx.restore()
@@ -419,7 +446,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         ctx.fillStyle = '#858079'
         ctx.font = `700 11px ${RESUME_FONT_FAMILY}`
         fitText(ctx, label, detailWidth, 11, 700, 8)
-        ctx.fillText(label, x, y)
+        drawCanvasText(ctx, label, x, y, emojiImages)
         if (iconCounts) {
           drawIconCounts(ctx, iconCounts, x, y + 10, detailWidth)
         } else if (seriousLevel !== undefined) {
@@ -427,7 +454,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         } else {
           ctx.fillStyle = '#161616'
           fitText(ctx, value || '—', detailWidth, 17, 800)
-          ctx.fillText(value || '—', x, y + 24)
+          drawCanvasText(ctx, value || '—', x, y + 24, emojiImages)
         }
         ctx.fillStyle = '#d6cec2'
         ctx.fillRect(x, y + 35, detailWidth, 2)
@@ -444,12 +471,14 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       ctx.fillText('ひとこと', 44, 638)
       ctx.fillStyle = '#fff'
       ctx.font = `700 17px ${RESUME_FONT_FAMILY}`
-      drawWrappedText(ctx, data.comment || 'よろしくお願いします！', 160, 628, 850, 25, 2)
+      drawWrappedText(ctx, data.comment || 'よろしくお願いします！', 160, 628, 850, 25, 2, emojiImages)
       ctx.fillStyle = accentSoft
       ctx.font = `800 12px ${RESUME_FONT_FAMILY}`
       ctx.fillText('#コンパス履歴書', 1018, 653)
       ctx.fillStyle = '#858079'
       ctx.font = `600 10px ${RESUME_FONT_FAMILY}`
+      ctx.textAlign = 'left'
+      ctx.fillText('Twemoji graphics: github.com/jdecked/twemoji · CC BY 4.0', 44, 668)
       ctx.textAlign = 'right'
       ctx.fillText('コンパス履歴書ジェネレーターV2 by @Ao_Sankaku  ·  https://cpsresume.aosankaku.net', 1156, 668)
       ctx.textAlign = 'left'
