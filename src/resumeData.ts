@@ -1,4 +1,4 @@
-import { DEFAULT_DETAIL_KEYS, DETAIL_LIMIT, isDetailKey } from './details'
+import { DEFAULT_DETAIL_KEYS, isDetailKey, limitDetailKeys } from './details'
 import { normalizeThemeHue } from './theme'
 import { initialResumeData, isAvatarFit, type AvatarFit, type ResumeData } from './types'
 
@@ -30,6 +30,8 @@ const stringFields = [
   'customDetailValue',
   'customDetailLabel2',
   'customDetailValue2',
+  'customDetailLabel3',
+  'customDetailValue3',
   'comment',
   'playStyle',
   'activeTime',
@@ -100,11 +102,11 @@ export const normalizeResumeData = (
   )))
 
   normalized.selectedDetailKeys = Array.isArray(source.selectedDetailKeys)
-    ? [...new Set(
+    ? limitDetailKeys([...new Set(
       source.selectedDetailKeys
         .map((key) => key === 'snsId' ? 'xId' : key)
         .filter(isDetailKey),
-    )].slice(0, DETAIL_LIMIT)
+    )])
     : DEFAULT_DETAIL_KEYS
   const heroSelections = Array.isArray(source.heroSelections)
     ? [...new Set(

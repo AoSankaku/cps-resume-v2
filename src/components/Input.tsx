@@ -13,7 +13,7 @@ import SaveAltRoundedIcon from '@mui/icons-material/SaveAltRounded'
 import StorageRoundedIcon from '@mui/icons-material/StorageRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { hero, ranks } from '../data/main'
-import { detailOptions, DETAIL_LIMIT, type DetailKey } from '../details'
+import { countDetailSlots, detailOptions, DETAIL_LIMIT, getDetailSlots, type DetailKey } from '../details'
 import { getResumeParseErrorMessage, parseResumeText, serializeResumeData } from '../resumeJson'
 import { getThemeColor, getThemeContrastColor } from '../theme'
 import type { AvatarFit, CacheStatus, ResumeData, Role } from '../types'
@@ -134,7 +134,6 @@ function ThemeColorControl({ hue, onCommit }: ThemeColorControlProps) {
       <div className="theme-heading">
         <div>
           <h3><span>05</span> テーマカラー</h3>
-          <p id="theme-color-hint">変更できるのは色相だけです。彩度92%・明るさ60%に固定しています。</p>
         </div>
         <output className="theme-value" aria-live="polite">
           <i aria-hidden="true" /> 色相 {draftHue}°
@@ -255,13 +254,15 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
     )
   }
 
+  const selectedDetailSlots = countDetailSlots(value.selectedDetailKeys)
+
   const toggleDetail = (key: DetailKey) => {
     const selected = value.selectedDetailKeys.includes(key)
     if (selected) {
       update('selectedDetailKeys', value.selectedDetailKeys.filter((item) => item !== key))
       return
     }
-    if (value.selectedDetailKeys.length >= DETAIL_LIMIT) return
+    if (selectedDetailSlots + getDetailSlots(key) > DETAIL_LIMIT) return
     update('selectedDetailKeys', [...value.selectedDetailKeys, key])
   }
 
@@ -391,16 +392,16 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
         <div className="detail-picker-heading">
           <div>
             <h3 id="detail-picker-title"><span>02</span> 履歴書に乗せる追加情報</h3>
-            <p id="detail-picker-hint">右下へ載せる項目を0〜6個選んでください。選んだ項目だけ入力できます。</p>
+            <p id="detail-picker-hint">右下へ載せる項目を0〜6枠分選んでください。自由項目3は横長で2枠使用します。</p>
           </div>
           <output className="detail-count" aria-live="polite">
-            <strong>{value.selectedDetailKeys.length}</strong> / {DETAIL_LIMIT}
+            <strong>{selectedDetailSlots}</strong> / {DETAIL_LIMIT}
           </output>
         </div>
         <div className="detail-option-grid" role="group" aria-describedby="detail-picker-hint">
-          {detailOptions.map(({ key, label, description }) => {
+          {detailOptions.map(({ key, label, description, slots }) => {
             const selected = value.selectedDetailKeys.includes(key)
-            const disabled = !selected && value.selectedDetailKeys.length >= DETAIL_LIMIT
+            const disabled = !selected && selectedDetailSlots + slots > DETAIL_LIMIT
             return (
               <label className={`detail-option${selected ? ' selected' : ''}${disabled ? ' disabled' : ''}`} key={key}>
                 <input
@@ -412,7 +413,7 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
                 />
                 <span className="detail-option-mark" aria-hidden="true">{selected ? '✓' : '+'}</span>
                 <span className="detail-option-copy">
-                  <strong>{label}</strong>
+                  <strong>{label}{slots > 1 && <span className="detail-slot-badge">2枠</span>}</strong>
                   <small>{description}</small>
                 </span>
               </label>
@@ -550,11 +551,12 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
               </div>
             </fieldset>
           </div>
-          <div className={`custom-detail-fields${isDetailEnabled('custom') || isDetailEnabled('custom2') ? '' : ' fields-disabled'}`}>
+          <div className={`custom-detail-fields${isDetailEnabled('custom') || isDetailEnabled('custom2') || isDetailEnabled('custom3') ? '' : ' fields-disabled'}`}>
             {([
-              ['custom', '自由項目 1', 'customDetailLabel', 'customDetailValue'],
-              ['custom2', '自由項目 2', 'customDetailLabel2', 'customDetailValue2'],
-            ] as const).map(([detailKey, legend, labelKey, valueKey]) => {
+              ['custom', '自由項目 1', 'customDetailLabel', 'customDetailValue', 28],
+              ['custom2', '自由項目 2', 'customDetailLabel2', 'customDetailValue2', 28],
+              ['custom3', '自由項目 3（横長・2枠使用）', 'customDetailLabel3', 'customDetailValue3', 56],
+            ] as const).map(([detailKey, legend, labelKey, valueKey, valueMaxLength]) => {
               const enabled = isDetailEnabled(detailKey)
               return (
                 <fieldset disabled={!enabled} className={`custom-detail-fieldset${enabled ? '' : ' fields-disabled'}`} key={detailKey}>
@@ -566,7 +568,7 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
                     </label>
                     <label className={`field${enabled ? '' : ' field-disabled'}`}>
                       <span>内容</span>
-                      <input value={value[valueKey]} maxLength={28} placeholder="自由に入力" onChange={(event) => update(valueKey, event.target.value)} />
+                      <input value={value[valueKey]} maxLength={valueMaxLength} placeholder="自由に入力" onChange={(event) => update(valueKey, event.target.value)} />
                     </label>
                   </div>
                 </fieldset>

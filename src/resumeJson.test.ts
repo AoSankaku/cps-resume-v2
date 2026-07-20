@@ -56,6 +56,20 @@ describe('parseResumeText', () => {
     expect(result.data.selectedDetailKeys).toEqual(['xId'])
   })
 
+  test('自由項目3の見出し・内容・選択状態を読み込める', () => {
+    const result = parseResumeText(JSON.stringify({
+      customDetailLabel3: '募集内容',
+      customDetailValue3: '固定メンバーを募集しています',
+      selectedDetailKeys: ['favoriteHero', 'custom3'],
+    }))
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.customDetailLabel3).toBe('募集内容')
+    expect(result.data.customDetailValue3).toBe('固定メンバーを募集しています')
+    expect(result.data.selectedDetailKeys).toEqual(['favoriteHero', 'custom3'])
+  })
+
   test('別形式のデータは拒否する', () => {
     const result = parseResumeText('{"format":"another-app","version":2,"data":{"playerName":"テスト"}}')
 

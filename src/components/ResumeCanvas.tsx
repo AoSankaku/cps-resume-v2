@@ -13,7 +13,7 @@ import {
   splitGraphemes,
   type EmojiImageMap,
 } from '../canvasText'
-import type { DetailKey } from '../details'
+import { getDetailLayout, type DetailKey } from '../details'
 import type { AvatarFit, ResumeData, Role } from '../types'
 import { getThemeColor, getThemeContrastColor } from '../theme'
 
@@ -452,15 +452,15 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         activeTime: { label: '主な活動時間', value: data.activeTime },
         custom: { label: data.customDetailLabel.trim() || '自由項目', value: data.customDetailValue },
         custom2: { label: data.customDetailLabel2.trim() || '自由項目 2', value: data.customDetailValue2 },
+        custom3: { label: data.customDetailLabel3.trim() || '自由項目 3', value: data.customDetailValue3 },
       }
-      const details = data.selectedDetailKeys.slice(0, 6).map((key) => detailMap[key])
-      const detailColumns = details.length === 1 ? 1 : 2
-      const detailWidth = detailColumns === 1 ? 386 : 180
-      details.forEach(({ label, value, icons: iconCounts, seriousLevel }, index) => {
-        const column = index % detailColumns
-        const row = Math.floor(index / detailColumns)
-        const x = 768 + column * 199
-        const y = 409 + row * 63
+      const positionedDetails = getDetailLayout(data.selectedDetailKeys).map(({ key, column, row, widthColumns }) => ({
+        ...detailMap[key],
+        x: 768 + column * 199,
+        y: 409 + row * 63,
+        width: widthColumns === 2 ? 386 : 180,
+      }))
+      positionedDetails.forEach(({ label, value, icons: iconCounts, seriousLevel, x, y, width: detailWidth }) => {
         ctx.fillStyle = '#858079'
         ctx.font = `700 11px ${RESUME_FONT_FAMILY}`
         fitText(ctx, label, detailWidth, 11, 700, 8)

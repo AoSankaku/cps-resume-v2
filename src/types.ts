@@ -31,6 +31,8 @@ export type ResumeData = {
   customDetailValue: string
   customDetailLabel2: string
   customDetailValue2: string
+  customDetailLabel3: string
+  customDetailValue3: string
   selectedDetailKeys: DetailKey[]
   heroSelections: string[]
   practicingHeroes: string[]
@@ -67,6 +69,8 @@ export const initialResumeData: ResumeData = {
   customDetailValue: '全天首都防壁 Hum-Sphere LLIK',
   customDetailLabel2: '好きなステージ',
   customDetailValue2: 'でらクランクストリート',
+  customDetailLabel3: '好きなバトルスタイル',
+  customDetailValue3: '味方と連携しながら、最後まで諦めずに戦います',
   selectedDetailKeys: ['favoriteHero', 'seriousLevel', 'playHistory', 'guild', 'friendCode', 'accountLevel'],
   heroSelections: ['青春 アリス', '桜華 忠臣', 'リリカ'],
   practicingHeroes: [],
@@ -76,5 +80,5 @@ export const initialResumeData: ResumeData = {
   avatarDataUrl: '',
   avatarFit: 'contain',
   showPlayerIcon: true,
-  themeHue: 350,
+  themeHue: 28,
 }
