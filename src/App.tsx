@@ -147,23 +147,22 @@ function App() {
       <div className="app-shell" style={themeStyle}>
         <Appbar theme={siteTheme} onToggleTheme={() => setSiteTheme((current) => current === 'dark' ? 'light' : 'dark')} />
         <main>
-        <section className="hero-intro">
-          <div className="hero-copy">
-            <span className="hero-kicker"><i /> PLAYER CARD GENERATOR</span>
-            <h1><span>あなたの戦歴を、</span><br />一枚に。</h1>
-            <p>
-              #コンパスのプロフィールを入力して、フレンド募集やSNS投稿に使える
-              オリジナル履歴書画像をつくろう。
-            </p>
-          </div>
-        </section>
+          <section className="hero-intro">
+            <div className="hero-copy">
+              <span className="hero-kicker"><i /> PLAYER CARD GENERATOR</span>
+              <h1><span>#コンパス履歴書</span><br />ジェネレーター</h1>
+              <p>
+                画像加工アプリ不要で、#コンパス履歴書の作成が完了します。
+              </p>
+            </div>
+          </section>
 
-        <div className="workspace">
-          <Input value={resume} onChange={setResume} onReset={reset} onSaveJson={saveJson} cacheStatus={cacheStatus} />
-          <div className="preview-column">
-            <ResumeCanvas data={deferredResume} />
+          <div className="workspace">
+            <Input value={resume} onChange={setResume} onReset={reset} onSaveJson={saveJson} cacheStatus={cacheStatus} />
+            <div className="preview-column">
+              <ResumeCanvas data={deferredResume} />
+            </div>
           </div>
-        </div>
         </main>
         <footer>
           <div className="footer-brand">
