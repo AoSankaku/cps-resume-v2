@@ -12,7 +12,7 @@ import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { hero, ranks } from '../data/main'
 import { detailOptions, DETAIL_LIMIT, type DetailKey } from '../details'
 import { getThemeColor, getThemeContrastColor } from '../theme'
-import type { CacheStatus, ResumeData, Role } from '../types'
+import type { AvatarFit, CacheStatus, ResumeData, Role } from '../types'
 
 type Props = {
   value: ResumeData
@@ -28,6 +28,20 @@ const roles: { key: Role; label: string }[] = [
   { key: 'gunner', label: 'ガンナー' },
   { key: 'tank', label: 'タンク' },
   { key: 'sprinter', label: 'スプリンター' },
+]
+
+const avatarFitOptions: Array<{ value: AvatarFit; label: string; description: string; recommended?: boolean }> = [
+  {
+    value: 'contain',
+    label: '画像をすべて見せる',
+    description: '画像全体が収まるように表示します。正方形のアイコンにおすすめです。',
+    recommended: true,
+  },
+  {
+    value: 'cover',
+    label: '枠いっぱいに広げる',
+    description: '枠をすき間なく埋め、はみ出す部分を切り取ります。',
+  },
 ]
 
 const themePresets = [
@@ -561,29 +575,52 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
       </section>
 
       <section className="form-section avatar-section">
-        <div className="avatar-copy">
-          <h3><span>04</span> プレイヤーアイコン</h3>
-          <p>枠を非表示にすると、自分で絵を加えるための余白にできます。選択済みの画像は非表示にしても保持されます。</p>
-          <label className="avatar-visibility-toggle">
-            <input
-              type="checkbox"
-              checked={value.showPlayerIcon}
-              onChange={(event) => update('showPlayerIcon', event.target.checked)}
-            />
-            <span>プレイヤーアイコン枠を履歴書に表示する</span>
-          </label>
-        </div>
-        <div className="avatar-actions">
-          <button className="upload-button" type="button" disabled={!value.showPlayerIcon} onClick={() => fileRef.current?.click()}>
-            <AddPhotoAlternateRoundedIcon /> 画像を選ぶ
-          </button>
-          {value.avatarDataUrl && (
-            <button className="icon-button" type="button" disabled={!value.showPlayerIcon} aria-label="アイコン画像を削除" onClick={() => update('avatarDataUrl', '')}>
-              <DeleteOutlineRoundedIcon />
+        <div className="avatar-heading">
+          <div className="avatar-copy">
+            <h3><span>04</span> プレイヤーアイコン</h3>
+            <p>画像を選び、履歴書の枠内でどのように見せるか選択できます。</p>
+          </div>
+          <div className="avatar-actions">
+            <button className="upload-button" type="button" disabled={!value.showPlayerIcon} onClick={() => fileRef.current?.click()}>
+              <AddPhotoAlternateRoundedIcon /> 画像を選ぶ
             </button>
-          )}
-          <input ref={fileRef} hidden disabled={!value.showPlayerIcon} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatar} />
+            {value.avatarDataUrl && (
+              <button className="icon-button" type="button" disabled={!value.showPlayerIcon} aria-label="アイコン画像を削除" onClick={() => update('avatarDataUrl', '')}>
+                <DeleteOutlineRoundedIcon />
+              </button>
+            )}
+            <input ref={fileRef} hidden disabled={!value.showPlayerIcon} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatar} />
+          </div>
         </div>
+        <fieldset className="avatar-fit-fieldset" disabled={!value.showPlayerIcon}>
+          <legend>画像の見せ方</legend>
+          <div className="avatar-fit-options">
+            {avatarFitOptions.map(({ value: fit, label, description, recommended }) => (
+              <label className={`avatar-fit-option${value.avatarFit === fit ? ' selected' : ''}`} key={fit}>
+                <input
+                  type="radio"
+                  name="avatarFit"
+                  value={fit}
+                  checked={value.avatarFit === fit}
+                  onChange={() => update('avatarFit', fit)}
+                />
+                <span className={`avatar-fit-demo avatar-fit-demo-${fit}`} aria-hidden="true"><i /></span>
+                <span className="avatar-fit-copy">
+                  <strong>{label}{recommended && <b>おすすめ</b>}</strong>
+                  <small>{description}</small>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <label className="avatar-visibility-toggle">
+          <input
+            type="checkbox"
+            checked={!value.showPlayerIcon}
+            onChange={(event) => update('showPlayerIcon', !event.target.checked)}
+          />
+          <span>プレイヤーアイコン枠を表示しない（自分でイラストを書き込む人用）</span>
+        </label>
       </section>
 
       <ThemeColorControl hue={value.themeHue} onCommit={(nextHue) => update('themeHue', nextHue)} />

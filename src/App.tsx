@@ -13,7 +13,7 @@ import ResumeCanvas from './components/ResumeCanvas'
 import { siteConfig } from './config/site'
 import { DEFAULT_DETAIL_KEYS, DETAIL_LIMIT, isDetailKey } from './details'
 import { serializeResumeData } from './resumeJson'
-import { initialResumeData, type CacheStatus, type ResumeData } from './types'
+import { initialResumeData, isAvatarFit, type CacheStatus, type ResumeData } from './types'
 import { getThemeColor, getThemeContrastColor, THEME_LIGHTNESS, THEME_SATURATION } from './theme'
 
 const STORAGE_KEY = 'compass-resume-v2'
@@ -41,6 +41,7 @@ function getInitialData(): ResumeData {
     const goldIconCount = parsed.goldIconCount ?? parsed.iconCount ?? initialResumeData.goldIconCount
     const xId = parsed.xId ?? parsed.snsId ?? initialResumeData.xId
     const discordId = parsed.discordId ?? initialResumeData.discordId
+    const avatarFit = isAvatarFit(parsed.avatarFit) ? parsed.avatarFit : 'cover'
     const selectedDetailKeys = Array.isArray(parsed.selectedDetailKeys)
       ? [...new Set(
         parsed.selectedDetailKeys
@@ -73,6 +74,7 @@ function getInitialData(): ResumeData {
       goldIconCount,
       xId,
       discordId,
+      avatarFit,
       selectedDetailKeys,
       heroSelections: heroSelections.length > 0 ? heroSelections : [initialResumeData.heroSelections[0]],
       practicingHeroes,

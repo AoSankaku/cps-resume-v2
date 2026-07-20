@@ -14,7 +14,7 @@ import {
   type EmojiImageMap,
 } from '../canvasText'
 import type { DetailKey } from '../details'
-import type { ResumeData, Role } from '../types'
+import type { AvatarFit, ResumeData, Role } from '../types'
 import { getThemeColor, getThemeContrastColor } from '../theme'
 
 const WIDTH = 1200
@@ -110,20 +110,32 @@ const fitText = (
   }
 }
 
-const drawCoverImage = (
+const drawFittedImage = (
   ctx: CanvasRenderingContext2D,
   image: HTMLImageElement,
   x: number,
   y: number,
   width: number,
   height: number,
+  fit: AvatarFit,
 ) => {
-  const ratio = Math.max(width / image.width, height / image.height)
-  const sourceWidth = width / ratio
-  const sourceHeight = height / ratio
-  const sourceX = (image.width - sourceWidth) / 2
-  const sourceY = (image.height - sourceHeight) / 2
-  ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height)
+  const imageWidth = image.naturalWidth || image.width
+  const imageHeight = image.naturalHeight || image.height
+  if (fit === 'cover') {
+    const ratio = Math.max(width / imageWidth, height / imageHeight)
+    const sourceWidth = width / ratio
+    const sourceHeight = height / ratio
+    const sourceX = (imageWidth - sourceWidth) / 2
+    const sourceY = (imageHeight - sourceHeight) / 2
+    ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height)
+    return
+  }
+  const ratio = Math.min(width / imageWidth, height / imageHeight)
+  const targetWidth = imageWidth * ratio
+  const targetHeight = imageHeight * ratio
+  const targetX = x + (width - targetWidth) / 2
+  const targetY = y + (height - targetHeight) / 2
+  ctx.drawImage(image, targetX, targetY, targetWidth, targetHeight)
 }
 
 const drawWrappedText = (
@@ -382,7 +394,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         roundedRect(ctx, 768, 110, 386, 268, 12)
         ctx.clip()
         if (avatar) {
-          drawCoverImage(ctx, avatar, 768, 110, 386, 268)
+          drawFittedImage(ctx, avatar, 768, 110, 386, 268, data.avatarFit)
         } else {
           const gradient = ctx.createLinearGradient(768, 110, 1154, 378)
           gradient.addColorStop(0, '#292929')

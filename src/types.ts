@@ -2,6 +2,10 @@ import type { DetailKey } from './details'
 
 export type Role = 'attacker' | 'gunner' | 'tank' | 'sprinter'
 export type CacheStatus = 'saved' | 'without-image' | 'error'
+export type AvatarFit = 'contain' | 'cover'
+
+export const isAvatarFit = (value: unknown): value is AvatarFit =>
+  value === 'contain' || value === 'cover'
 
 export type ResumeData = {
   playerName: string
@@ -34,6 +38,7 @@ export type ResumeData = {
   playStyle: string
   activeTime: string
   avatarDataUrl: string
+  avatarFit: AvatarFit
   showPlayerIcon: boolean
   themeHue: number
 }
@@ -69,6 +74,7 @@ export const initialResumeData: ResumeData = {
   playStyle: '固定も野良も楽しみます',
   activeTime: '平日 21:00〜 / 休日',
   avatarDataUrl: '',
+  avatarFit: 'contain',
   showPlayerIcon: true,
   themeHue: 350,
 }
