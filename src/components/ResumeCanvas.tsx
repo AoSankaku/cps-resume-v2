@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded'
-import ImageRoundedIcon from '@mui/icons-material/ImageRounded'
 import { hero } from '../data/main'
 import attackerIcon from '../assets/roles/attacker.png'
 import gunnerIcon from '../assets/roles/gunner.png'
@@ -12,6 +11,9 @@ import { getThemeColor, getThemeContrastColor } from '../theme'
 
 const WIDTH = 1200
 const HEIGHT = 675
+const RESUME_FONT_FAMILY = '"Noto Sans JP", sans-serif'
+const RESUME_FONT_WEIGHTS = [600, 700, 800, 900] as const
+const RESUME_FONT_STATIC_TEXT = '#コンパス 履歴書 よみ 呼び方 最高デッキレベル デキレ 使用ヒーロー 未選択 応援コード 性別 アカウントレベル フレンドコード 所属ギルド ガチ度 アイコン数 推し コンパス歴 プレイスタイル 主な活動時間 自由項目 金銀銅大 ひとこと よろしくお願いします'
 const roleIcons: Record<Role, string> = { attacker: attackerIcon, gunner: gunnerIcon, tank: tankIcon, sprinter: sprinterIcon }
 const roleColors: Record<Role, string> = { attacker: '#ff3855', gunner: '#2ccf75', tank: '#ffbd27', sprinter: '#4c6fff' }
 const roleLabels: Record<Role, string> = { attacker: 'ATTACKER', gunner: 'GUNNER', tank: 'TANK', sprinter: 'SPRINTER' }
@@ -39,6 +41,19 @@ const roleIconImages = Promise.all(
   (Object.keys(roleIcons) as Role[]).map(async (role) => [role, await loadImage(roleIcons[role])] as const),
 ).then((entries) => Object.fromEntries(entries) as Record<Role, HTMLImageElement>)
 
+const loadResumeFonts = (data: ResumeData) => {
+  const userText = Object.entries(data).flatMap(([key, value]) => {
+    if (key === 'avatarDataUrl') return []
+    if (typeof value === 'string') return [value]
+    if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string')
+    return []
+  }).join('')
+  const fontText = `${RESUME_FONT_STATIC_TEXT}${userText}`
+  return Promise.allSettled(
+    RESUME_FONT_WEIGHTS.map((weight) => document.fonts.load(`${weight} 96px ${RESUME_FONT_FAMILY}`, fontText)),
+  )
+}
+
 const findRole = (heroName: string): Role => {
   const keys = Object.keys(hero) as Role[]
   return keys.find((key) => hero[key].some((item) => item.fullName === heroName)) ?? 'attacker'
@@ -59,10 +74,10 @@ const fitText = (
 ) => {
   let size = initialSize
   const effectiveMinimumSize = Math.min(initialSize, minimumSize)
-  ctx.font = `${weight} ${size}px "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif`
+  ctx.font = `${weight} ${size}px ${RESUME_FONT_FAMILY}`
   while (ctx.measureText(text).width > maxWidth && size > effectiveMinimumSize) {
     size -= 1
-    ctx.font = `${weight} ${size}px "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif`
+    ctx.font = `${weight} ${size}px ${RESUME_FONT_FAMILY}`
   }
 }
 
@@ -133,12 +148,12 @@ const drawIconCounts = (
     ctx.lineWidth = 1
     ctx.strokeRect(tileX + .5, tileY + .5, tileSize - 1, tileSize - 1)
     ctx.fillStyle = style.ink
-    ctx.font = '900 9px "Yu Gothic", sans-serif'
+    ctx.font = `900 9px ${RESUME_FONT_FAMILY}`
     ctx.textAlign = 'center'
     ctx.fillText(style.mark, tileX + tileSize / 2, tileY + 12.5)
     ctx.textAlign = 'left'
     ctx.fillStyle = '#161616'
-    ctx.font = '900 12px "Yu Gothic", sans-serif'
+    ctx.font = `900 12px ${RESUME_FONT_FAMILY}`
     const count = counts[index] || '0'
     fitText(ctx, count, slotWidth - tileSize - 4, 12, 900, 8)
     ctx.fillText(count, tileX + tileSize + 3, tileY + 13)
@@ -179,7 +194,8 @@ const drawSeriousLevel = (
 
 function ResumeCanvas({ data }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [isReady, setIsReady] = useState(false)
+  const [renderedData, setRenderedData] = useState<ResumeData | null>(null)
+  const isReady = renderedData === data
 
   useEffect(() => {
     let cancelled = false
@@ -189,7 +205,7 @@ function ResumeCanvas({ data }: Props) {
       const ctx = canvas?.getContext('2d')
       if (!canvas || !ctx) return
 
-      const icons = await roleIconImages
+      const [, icons] = await Promise.all([loadResumeFonts(data), roleIconImages])
       const avatar = data.showPlayerIcon && data.avatarDataUrl ? await loadImage(data.avatarDataUrl).catch(() => null) : null
       if (cancelled) return
       const accent = getThemeColor(data.themeHue)
@@ -214,9 +230,9 @@ function ResumeCanvas({ data }: Props) {
       ctx.fill()
 
       ctx.fillStyle = accentContrast
-      ctx.font = '900 27px "Yu Gothic", sans-serif'
+      ctx.font = `900 27px ${RESUME_FONT_FAMILY}`
       ctx.fillText('#コンパス 履歴書', 44, 49)
-      ctx.font = '700 13px "Yu Gothic", sans-serif'
+      ctx.font = `700 13px ${RESUME_FONT_FAMILY}`
       ctx.fillStyle = '#bcbcbc'
       ctx.letterSpacing = '4px'
       ctx.fillText(`PLAYER RESUME // ${issueDate}`, 792, 48)
@@ -225,12 +241,12 @@ function ResumeCanvas({ data }: Props) {
       ctx.fillStyle = accent
       ctx.fillRect(44, 115, 7, 112)
       ctx.fillStyle = '#77736d'
-      ctx.font = '700 16px "Yu Gothic", sans-serif'
+      ctx.font = `700 16px ${RESUME_FONT_FAMILY}`
       ctx.fillText(data.pronunciation || 'よみ・呼び方', 72, 130)
       ctx.fillStyle = '#161616'
       fitText(ctx, data.playerName || 'NO NAME', 700, 60, 900)
       ctx.fillText(data.playerName || 'NO NAME', 70, 193)
-      ctx.font = '700 15px "Yu Gothic", sans-serif'
+      ctx.font = `700 15px ${RESUME_FONT_FAMILY}`
       ctx.fillStyle = '#77736d'
       ctx.fillText('PLAYER PROFILE', 72, 221)
 
@@ -247,7 +263,7 @@ function ResumeCanvas({ data }: Props) {
         ctx.fillStyle = index === 0 ? '#161616' : '#e5ddd2'
         ctx.fill()
         ctx.fillStyle = index === 0 ? '#aaa' : '#77736d'
-        ctx.font = '800 12px "Yu Gothic", sans-serif'
+        ctx.font = `800 12px ${RESUME_FONT_FAMILY}`
         ctx.fillText(label, x + 18, 277)
         ctx.fillStyle = index === 0 ? '#fff' : '#161616'
         fitText(ctx, value, metricWidth - 36, 35, 900)
@@ -255,7 +271,7 @@ function ResumeCanvas({ data }: Props) {
       })
 
       ctx.fillStyle = '#161616'
-      ctx.font = '900 16px "Yu Gothic", sans-serif'
+      ctx.font = `900 16px ${RESUME_FONT_FAMILY}`
       ctx.fillText('MAIN HEROES / 使用ヒーロー', 44, 378)
       const selectedHeroes = data.heroSelections.length > 0 ? data.heroSelections.slice(0, 6) : ['']
       const heroCount = selectedHeroes.length
@@ -293,7 +309,7 @@ function ResumeCanvas({ data }: Props) {
         if (!twoColumnHeroes) {
           ctx.textAlign = 'right'
           ctx.fillStyle = roleColors[role]
-          ctx.font = '900 13px "Yu Gothic", sans-serif'
+          ctx.font = `900 13px ${RESUME_FONT_FAMILY}`
           ctx.fillText(roleLabels[role], 713, y + 30)
           ctx.textAlign = 'left'
         }
@@ -322,7 +338,7 @@ function ResumeCanvas({ data }: Props) {
             ctx.stroke()
           }
           ctx.fillStyle = '#fff'
-          ctx.font = '900 96px "Yu Gothic", sans-serif'
+          ctx.font = `900 96px ${RESUME_FONT_FAMILY}`
           ctx.textAlign = 'center'
           ctx.fillText(data.playerName.trim().slice(0, 1) || '#', 961, 277)
           ctx.textAlign = 'left'
@@ -335,7 +351,7 @@ function ResumeCanvas({ data }: Props) {
         ctx.fillStyle = '#161616'
         ctx.fillRect(910, 354, 244, 24)
         ctx.fillStyle = '#fff'
-        ctx.font = '800 11px "Yu Gothic", sans-serif'
+        ctx.font = `800 11px ${RESUME_FONT_FAMILY}`
         ctx.fillText('PLAYER ICON', 1066, 370)
       }
 
@@ -368,7 +384,7 @@ function ResumeCanvas({ data }: Props) {
         const x = 768 + column * 199
         const y = 409 + row * 63
         ctx.fillStyle = '#858079'
-        ctx.font = '700 11px "Yu Gothic", sans-serif'
+        ctx.font = `700 11px ${RESUME_FONT_FAMILY}`
         fitText(ctx, label, detailWidth, 11, 700, 8)
         ctx.fillText(label, x, y)
         if (iconCounts) {
@@ -388,27 +404,29 @@ function ResumeCanvas({ data }: Props) {
       ctx.fillRect(0, 596, WIDTH, 79)
       ctx.fillStyle = accent
       ctx.fillRect(44, 612, 94, 5)
-      ctx.font = '900 12px "Yu Gothic", sans-serif'
+      ctx.font = `900 12px ${RESUME_FONT_FAMILY}`
       ctx.fillText('', 44, 632)
       ctx.fillStyle = '#9b9996'
-      ctx.font = '800 11px "Yu Gothic", sans-serif'
+      ctx.font = `800 11px ${RESUME_FONT_FAMILY}`
       ctx.fillText('ひとこと', 44, 638)
       ctx.fillStyle = '#fff'
-      ctx.font = '700 17px "Yu Gothic", sans-serif'
+      ctx.font = `700 17px ${RESUME_FONT_FAMILY}`
       drawWrappedText(ctx, data.comment || 'よろしくお願いします！', 160, 628, 850, 25, 2)
       ctx.fillStyle = accentSoft
-      ctx.font = '800 12px "Yu Gothic", sans-serif'
+      ctx.font = `800 12px ${RESUME_FONT_FAMILY}`
       ctx.fillText('#コンパス履歴書', 1018, 653)
       ctx.fillStyle = '#858079'
-      ctx.font = '600 10px "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif'
+      ctx.font = `600 10px ${RESUME_FONT_FAMILY}`
       ctx.textAlign = 'right'
       ctx.fillText('コンパス履歴書ジェネレーターV2 by @Ao_Sankaku  ·  https://cpsresume.aosankaku.net', 1156, 668)
       ctx.textAlign = 'left'
 
-      setIsReady(true)
+      setRenderedData(data)
     }
 
-    const frame = window.requestAnimationFrame(() => draw().catch(() => setIsReady(false)))
+    const frame = window.requestAnimationFrame(() => draw().catch(() => {
+      if (!cancelled) setRenderedData(null)
+    }))
     return () => {
       cancelled = true
       window.cancelAnimationFrame(frame)
@@ -441,8 +459,16 @@ function ResumeCanvas({ data }: Props) {
           <DownloadRoundedIcon /> PNGで保存
         </button>
       </div>
-      <div className="canvas-frame">
-        {!isReady && <div className="canvas-loading"><ImageRoundedIcon /> 画像を準備中…</div>}
+      <div className="canvas-frame" aria-busy={!isReady}>
+        {!isReady && (
+          <div className="canvas-loading" role="status" aria-live="polite">
+            <span className="canvas-loading-spinner" aria-hidden="true" />
+            <span className="canvas-loading-copy">
+              <strong>フォントを読み込み中…</strong>
+              <small>プレビュー画像を準備しています</small>
+            </span>
+          </div>
+        )}
         <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} aria-label={`${data.playerName}さんのコンパス履歴書プレビュー`} />
       </div>
       <p className="preview-note"><span /> 1200 × 675 px・SNS投稿向けの16:9サイズ</p>

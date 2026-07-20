@@ -80,7 +80,7 @@ function App() {
         : { primary: '#202126', secondary: '#625e58' },
     },
     typography: {
-      fontFamily: '"Yu Gothic", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif',
+      fontFamily: '"Noto Sans JP", sans-serif',
     },
   }), [siteTheme])
 
