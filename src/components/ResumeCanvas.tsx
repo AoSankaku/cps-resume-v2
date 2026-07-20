@@ -252,15 +252,17 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
   const [renderedData, setRenderedData] = useState<ResumeData | null>(null)
   const renderRevision = CANVAS_RENDER_REVISION
   const isReady = renderedData === data
+  const hasRenderedPreview = renderedData !== null
 
   useEffect(() => {
     let cancelled = false
-    setRenderedData(null)
 
     const draw = async () => {
-      const canvas = canvasRef.current
-      const ctx = canvas?.getContext('2d')
-      if (!canvas || !ctx) return
+      const nextCanvas = document.createElement('canvas')
+      nextCanvas.width = WIDTH
+      nextCanvas.height = HEIGHT
+      const ctx = nextCanvas.getContext('2d')
+      if (!ctx) return
 
       const [, icons, emojiImages] = await Promise.all([
         loadResumeFonts(data),
@@ -483,6 +485,12 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       ctx.fillText('コンパス履歴書ジェネレーターV2 by @Ao_Sankaku  ·  https://cpsresume.aosankaku.net', 1156, 668)
       ctx.textAlign = 'left'
 
+      if (cancelled) return
+      const canvas = canvasRef.current
+      const visibleContext = canvas?.getContext('2d')
+      if (!canvas || !visibleContext) return
+      visibleContext.clearRect(0, 0, WIDTH, HEIGHT)
+      visibleContext.drawImage(nextCanvas, 0, 0)
       setRenderedData(data)
     }
 
@@ -522,7 +530,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         </button>
       </div>
       <div className="canvas-frame" aria-busy={!isReady}>
-        {!isReady && (
+        {!hasRenderedPreview && (
           <div className="canvas-loading" role="status" aria-live="polite">
             <span className="canvas-loading-spinner" aria-hidden="true" />
             <span className="canvas-loading-copy">
