@@ -242,35 +242,33 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       ctx.letterSpacing = '0px'
 
       ctx.fillStyle = accent
-      ctx.fillRect(44, 115, 7, 112)
+      ctx.fillRect(44, 115, 7, 92)
       ctx.fillStyle = '#77736d'
       ctx.font = `700 16px ${RESUME_FONT_FAMILY}`
       ctx.fillText(data.pronunciation || 'よみ・呼び方', 72, 130)
       ctx.fillStyle = '#161616'
       fitText(ctx, data.playerName || 'NO NAME', 700, 60, 900)
       ctx.fillText(data.playerName || 'NO NAME', 70, 193)
-      ctx.font = `700 15px ${RESUME_FONT_FAMILY}`
-      ctx.fillStyle = '#77736d'
-      ctx.fillText('PLAYER PROFILE', 72, 221)
 
       const metrics: Array<[string, string]> = [
         ...(data.highestRank ? [['BEST RANK', data.highestRank] as [string, string]] : []),
         ...(data.seasonHighestRank ? [['SEASON BEST', data.seasonHighestRank] as [string, string]] : []),
         ['最高デッキレベル（デキレ）', data.maxDeckLevel || '---'],
       ]
+      const metricY = 234
       const metricGap = 12
       const metricWidth = (687 - metricGap * (metrics.length - 1)) / metrics.length
       metrics.forEach(([label, value], index) => {
         const x = 44 + index * (metricWidth + metricGap)
-        roundedRect(ctx, x, 254, metricWidth, 82, 8)
+        roundedRect(ctx, x, metricY, metricWidth, 82, 8)
         ctx.fillStyle = index === 0 ? '#161616' : '#e5ddd2'
         ctx.fill()
         ctx.fillStyle = index === 0 ? '#aaa' : '#77736d'
         ctx.font = `800 12px ${RESUME_FONT_FAMILY}`
-        ctx.fillText(label, x + 18, 277)
+        ctx.fillText(label, x + 18, metricY + 23)
         ctx.fillStyle = index === 0 ? '#fff' : '#161616'
         fitText(ctx, value, metricWidth - 36, 35, 900)
-        ctx.fillText(value, x + 18, 318)
+        ctx.fillText(value, x + 18, metricY + 64)
       })
 
       ctx.fillStyle = '#161616'
