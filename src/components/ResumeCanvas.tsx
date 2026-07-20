@@ -288,10 +288,9 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       const avatar = data.showPlayerIcon && data.avatarDataUrl ? await loadImage(data.avatarDataUrl).catch(() => null) : null
       if (cancelled) return
       const accent = getThemeColor(data.themeHue)
-      const accentSoft = getThemeColor(data.themeHue, 0.78)
       const accentContrast = getThemeContrastColor(data.themeHue)
       const now = new Date()
-      const issueDate = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}`
+      const issueDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
       ctx.clearRect(0, 0, WIDTH, HEIGHT)
       ctx.fillStyle = '#f4efe6'
@@ -490,15 +489,10 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       ctx.fillStyle = '#fff'
       ctx.font = `700 17px ${RESUME_FONT_FAMILY}`
       drawWrappedText(ctx, data.comment || 'よろしくお願いします！', 160, 628, 850, 25, 2, emojiImages)
-      ctx.fillStyle = accentSoft
-      ctx.font = `800 12px ${RESUME_FONT_FAMILY}`
-      ctx.fillText('#コンパス履歴書', 1018, 653)
       ctx.fillStyle = '#858079'
       ctx.font = `600 10px ${RESUME_FONT_FAMILY}`
-      ctx.textAlign = 'left'
-      ctx.fillText('Twemoji graphics: github.com/jdecked/twemoji · CC BY 4.0', 44, 668)
       ctx.textAlign = 'right'
-      ctx.fillText('コンパス履歴書ジェネレーターV2 by @Ao_Sankaku  ·  https://cpsresume.aosankaku.net', 1156, 668)
+      ctx.fillText('Twemoji graphics: github.com/jdecked/twemoji · CC BY 4.0  ·  コンパス履歴書ジェネレーターV2 by @Ao_Sankaku  ·  https://cpsresume.aosankaku.net', 1156, 668)
       ctx.textAlign = 'left'
 
       if (cancelled) return
@@ -572,7 +566,6 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         )}
         <canvas ref={canvasRef} width={RENDER_WIDTH} height={RENDER_HEIGHT} aria-label={`${data.playerName}さんのコンパス履歴書プレビュー`} />
       </div>
-      <p className="preview-note"><span /> 通常は1.5倍、高画質は3倍の解像度で保存します</p>
     </section>
   )
 }
