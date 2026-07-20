@@ -19,6 +19,10 @@ import { getThemeColor, getThemeContrastColor } from '../theme'
 
 const WIDTH = 1200
 const HEIGHT = 675
+const STANDARD_EXPORT_SCALE = 1.5
+const HIGH_QUALITY_EXPORT_SCALE = STANDARD_EXPORT_SCALE * 2
+const RENDER_WIDTH = Math.round(WIDTH * HIGH_QUALITY_EXPORT_SCALE)
+const RENDER_HEIGHT = Math.round(HEIGHT * HIGH_QUALITY_EXPORT_SCALE)
 const RESUME_FONT_FAMILY = '"Noto Sans JP", sans-serif'
 const RESUME_FONT_WEIGHTS = [600, 700, 800, 900] as const
 const RESUME_FONT_STATIC_TEXT = '#コンパス 履歴書 よみ 呼び方 最高デッキレベル デキレ 使用ヒーロー 未選択 応援コード 性別 アカウントレベル フレンドコード 所属ギルド ガチ度 アイコン数 推し コンパス歴 X（Twitter）のID DiscordのID プレイスタイル 主な活動時間 自由項目 金銀銅大 ひとこと よろしくお願いします'
@@ -270,10 +274,11 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
 
     const draw = async () => {
       const nextCanvas = document.createElement('canvas')
-      nextCanvas.width = WIDTH
-      nextCanvas.height = HEIGHT
+      nextCanvas.width = RENDER_WIDTH
+      nextCanvas.height = RENDER_HEIGHT
       const ctx = nextCanvas.getContext('2d')
       if (!ctx) return
+      ctx.scale(HIGH_QUALITY_EXPORT_SCALE, HIGH_QUALITY_EXPORT_SCALE)
 
       const [, icons, emojiImages] = await Promise.all([
         loadResumeFonts(data),
@@ -500,7 +505,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       const canvas = canvasRef.current
       const visibleContext = canvas?.getContext('2d')
       if (!canvas || !visibleContext) return
-      visibleContext.clearRect(0, 0, WIDTH, HEIGHT)
+      visibleContext.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT)
       visibleContext.drawImage(nextCanvas, 0, 0)
       setRenderedData(data)
     }
@@ -514,16 +519,24 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
     }
   }, [data, renderRevision])
 
-  const download = () => {
+  const download = (scale: number) => {
     const canvas = canvasRef.current
     if (!canvas || !isReady) return
-    canvas.toBlob((blob) => {
+    const exportCanvas = document.createElement('canvas')
+    exportCanvas.width = Math.round(WIDTH * scale)
+    exportCanvas.height = Math.round(HEIGHT * scale)
+    const exportContext = exportCanvas.getContext('2d')
+    if (!exportContext) return
+    exportContext.imageSmoothingEnabled = true
+    exportContext.imageSmoothingQuality = 'high'
+    exportContext.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height)
+    exportCanvas.toBlob((blob) => {
       if (!blob) return
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       const safeName = data.playerName.trim().replace(/[\\/:*?"<>|]/g, '_') || 'compass-resume'
       link.href = url
-      link.download = `${safeName}-履歴書.png`
+      link.download = `${safeName}-履歴書${scale === HIGH_QUALITY_EXPORT_SCALE ? '-高画質' : ''}.png`
       link.click()
       URL.revokeObjectURL(url)
     }, 'image/png')
@@ -536,9 +549,16 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
           <span className="eyebrow">LIVE PREVIEW</span>
           <h2 id={headingId}>完成イメージ</h2>
         </div>
-        <button className="download-button" type="button" onClick={download} disabled={!isReady}>
-          <DownloadRoundedIcon /> PNGで保存
-        </button>
+        <div className="download-actions" aria-label="保存画質を選択">
+          <button className="download-button download-button-standard" type="button" onClick={() => download(STANDARD_EXPORT_SCALE)} disabled={!isReady}>
+            <DownloadRoundedIcon />
+            <span>PNGで保存<small>1800 × 1013</small></span>
+          </button>
+          <button className="download-button" type="button" onClick={() => download(HIGH_QUALITY_EXPORT_SCALE)} disabled={!isReady}>
+            <DownloadRoundedIcon />
+            <span>高画質で保存<small>3600 × 2025</small></span>
+          </button>
+        </div>
       </div>
       <div className="canvas-frame" aria-busy={!isReady}>
         {!hasRenderedPreview && (
@@ -550,9 +570,9 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
             </span>
           </div>
         )}
-        <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} aria-label={`${data.playerName}さんのコンパス履歴書プレビュー`} />
+        <canvas ref={canvasRef} width={RENDER_WIDTH} height={RENDER_HEIGHT} aria-label={`${data.playerName}さんのコンパス履歴書プレビュー`} />
       </div>
-      <p className="preview-note"><span /> 1200 × 675 px・SNS投稿向けの16:9サイズ</p>
+      <p className="preview-note"><span /> 通常は1.5倍、高画質は3倍の解像度で保存します</p>
     </section>
   )
 }

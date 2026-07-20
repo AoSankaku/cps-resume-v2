@@ -212,6 +212,24 @@ main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px
 .storage-warning-chevron { flex: 0 0 auto; margin-left: auto; }
 .json-save-button { border: 0; background: var(--red); color: var(--accent-contrast); box-shadow: 4px 4px 0 #050506; transition: transform .15s, box-shadow .15s; }
 .json-save-button:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #050506; }
+.backup-restore-panel { margin-top: 20px; padding: 18px; border: 1px solid #3e3f46; background: #101115; }
+.backup-restore-heading { margin-bottom: 13px; display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.backup-restore-heading h4 { margin: 0 0 5px; color: var(--ink); font-size: 14px; }
+.backup-restore-heading p { max-width: 500px; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.7; }
+.backup-refresh-button, .backup-file-button, .backup-apply-button { min-height: 40px; padding: 8px 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; font-weight: 900; }
+.backup-refresh-button { flex: 0 0 auto; border: 1px solid #4c4d54; background: #202126; color: var(--ink); }
+.backup-refresh-button:hover, .backup-file-button:hover { border-color: var(--red); color: var(--red); }
+.backup-refresh-button:focus-visible, .backup-file-button:focus-visible, .backup-apply-button:focus-visible, .backup-textarea:focus { outline: 3px solid var(--red); outline-offset: 2px; }
+.backup-textarea { width: 100%; min-height: 210px; resize: vertical; border: 1px solid #4c4d54; padding: 12px 13px; background: #0b0c0f; color: #ddd8d0; caret-color: var(--red); font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace; font-size: 10px; line-height: 1.6; tab-size: 2; }
+.backup-textarea[aria-invalid="true"] { border-color: #e97878; }
+.backup-restore-actions { margin-top: 10px; display: flex; justify-content: flex-end; gap: 9px; flex-wrap: wrap; }
+.backup-file-button { border: 1px solid #4c4d54; background: #202126; color: var(--ink); }
+.backup-apply-button { border: 0; background: var(--red); color: var(--accent-contrast); }
+.backup-apply-button:hover { filter: brightness(1.1); }
+.backup-feedback { margin-top: 12px; padding: 9px 11px; display: block; border-left: 3px solid currentColor; font-size: 10px; font-weight: 800; line-height: 1.6; }
+.backup-feedback-success { background: rgba(56, 112, 76, .12); color: #85bf9a; }
+.backup-feedback-warning { background: rgba(148, 108, 39, .12); color: #d3ad69; }
+.backup-feedback-error { background: rgba(170, 48, 48, .12); color: #f08b8b; }
 .storage-warning-dialog .MuiDialogContent-root p + p { margin-top: 12px; }
 
 .preview-column { position: sticky; top: 24px; }
@@ -219,7 +237,11 @@ main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px
 .preview-panel { padding: clamp(20px, 2.5vw, 34px); background: var(--surface-raised); border-color: #34353a; box-shadow: 10px 10px 0 hsl(var(--accent-hue) var(--accent-saturation) var(--accent-lightness) / .2); color: #fff; }
 .preview-heading { align-items: center; margin-bottom: 24px; }
 .preview-heading h2 { color: #fff; }
+.download-actions { display: flex; justify-content: flex-end; gap: 10px; }
 .download-button { min-height: 46px; box-shadow: 4px 4px 0 #f3efe7; }
+.download-button span { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+.download-button small { margin-top: 3px; font-size: 9px; font-weight: 700; opacity: .75; }
+.download-button-standard { border: 1px solid #5a5b61; background: #292a2f; color: #f3efe7; }
 .download-button:hover { box-shadow: 2px 2px 0 #f3efe7; }
 .download-button:disabled { cursor: wait; opacity: .55; transform: none; }
 .canvas-frame { position: relative; overflow: hidden; border: 1px solid #4b4b4b; background: #111; }
@@ -252,6 +274,12 @@ footer strong { color: #fff; font-size: 13px; }
 :root[data-theme="light"] .storage-warning-button { border-color: #bf7c7c; background: #fff0ef; color: #a62e2e; }
 :root[data-theme="light"] .json-save-button { box-shadow: 4px 4px 0 #202126; }
 :root[data-theme="light"] .json-save-button:hover { box-shadow: 2px 2px 0 #202126; }
+:root[data-theme="light"] .backup-restore-panel { border-color: #bbb6ad; background: #f5f2eb; }
+:root[data-theme="light"] .backup-refresh-button, :root[data-theme="light"] .backup-file-button { border-color: #aaa59c; background: #ece8e0; color: #47443f; }
+:root[data-theme="light"] .backup-textarea { border-color: #aaa59c; background: #fff; color: #202126; }
+:root[data-theme="light"] .backup-feedback-success { color: #247044; }
+:root[data-theme="light"] .backup-feedback-warning { color: #855b12; }
+:root[data-theme="light"] .backup-feedback-error { color: #a62e2e; }
 :root[data-theme="light"] .field > span, :root[data-theme="light"] .icon-count-fieldset legend { color: #4f4b45; }
 :root[data-theme="light"] .field em, :root[data-theme="light"] .field small, :root[data-theme="light"] .hero-selection-heading output, :root[data-theme="light"] .heat-scale-labels { color: #6f6b64; }
 :root[data-theme="light"] .field input, :root[data-theme="light"] .field select, :root[data-theme="light"] .field textarea { border-color: #bdb8af; }
@@ -321,11 +349,17 @@ footer strong { color: #fff; font-size: 13px; }
   .preview-column-bottom { order: 2; }
   .editor-panel { order: 1; width: 100%; padding: 22px 16px; }
   .preview-panel { padding: 18px 12px; }
-  .preview-heading { align-items: flex-start; }
+  .preview-heading { align-items: flex-start; flex-direction: column; }
+  .download-actions { width: 100%; justify-content: stretch; }
+  .download-actions .download-button { flex: 1; }
   .preview-heading h2, .editor-heading h2 { font-size: 21px; }
   .editor-heading { align-items: flex-start; flex-direction: column; }
   .editor-heading-actions { width: 100%; justify-content: flex-start; }
   .editor-save-grid { grid-template-columns: 1fr; }
+  .backup-restore-heading { flex-direction: column; }
+  .backup-refresh-button { width: 100%; }
+  .backup-restore-actions { align-items: stretch; flex-direction: column; }
+  .backup-file-button, .backup-apply-button { width: 100%; }
   .download-button { min-height: 42px; padding: 9px 12px; font-size: 12px; }
   .field-grid { grid-template-columns: 1fr; }
   .field-wide { grid-column: auto; }

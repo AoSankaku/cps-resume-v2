@@ -4,13 +4,17 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import FileUploadRoundedIcon from '@mui/icons-material/FileUploadRounded'
 import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded'
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded'
 import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded'
+import RestoreRoundedIcon from '@mui/icons-material/RestoreRounded'
 import SaveAltRoundedIcon from '@mui/icons-material/SaveAltRounded'
 import StorageRoundedIcon from '@mui/icons-material/StorageRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { hero, ranks } from '../data/main'
 import { detailOptions, DETAIL_LIMIT, type DetailKey } from '../details'
+import { getResumeParseErrorMessage, parseResumeText, serializeResumeData } from '../resumeJson'
 import { getThemeColor, getThemeContrastColor } from '../theme'
 import type { AvatarFit, CacheStatus, ResumeData, Role } from '../types'
 
@@ -18,7 +22,7 @@ type Props = {
   value: ResumeData
   onChange: (next: ResumeData) => void
   onReset: () => void
-  onSaveJson: () => void
+  onSaveBackupFile: () => void
   onShowStorageWarning: () => void
   cacheStatus: CacheStatus
 }
@@ -62,6 +66,14 @@ const APPLICATION_CODE_WARNING_ID = 'application-code-warning'
 const FRIEND_CODE_PATTERN = /^[0-9]{10}$/
 const FRIEND_CODE_WARNING_ID = 'friend-code-warning'
 const ICON_COUNT_HINT_ID = 'icon-count-hint'
+const BACKUP_TEXT_HINT_ID = 'backup-text-hint'
+const BACKUP_FEEDBACK_ID = 'backup-feedback'
+const MAX_BACKUP_FILE_SIZE = 25 * 1024 * 1024
+
+type BackupFeedback = {
+  tone: 'success' | 'warning' | 'error'
+  message: string
+}
 
 const sanitizeIconCount = (next: string) => {
   const normalized = next.replace(/[~〜]/g, '～').replace(/\+/g, '＋')
@@ -167,13 +179,21 @@ function ThemeColorControl({ hue, onCommit }: ThemeColorControlProps) {
   )
 }
 
-function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cacheStatus }: Props) {
+function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarning, cacheStatus }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const backupFileRef = useRef<HTMLInputElement>(null)
+  const [backupText, setBackupText] = useState(() => serializeResumeData(value))
+  const [backupTextDirty, setBackupTextDirty] = useState(false)
+  const [backupFeedback, setBackupFeedback] = useState<BackupFeedback | null>(null)
   const seasonHighestRankIndex = ranks.indexOf(value.seasonHighestRank)
   const heroOptions = useMemo(
     () => roles.flatMap(({ key, label }) => hero[key].map((item) => ({ ...item, role: key, roleLabel: label }))),
     [],
   )
+
+  useEffect(() => {
+    if (!backupTextDirty) setBackupText(serializeResumeData(value))
+  }, [backupTextDirty, value])
 
   const update = <K extends keyof ResumeData>(key: K, next: ResumeData[K]) => {
     onChange({ ...value, [key]: next })
@@ -259,6 +279,49 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
     const reader = new FileReader()
     reader.onload = () => update('avatarDataUrl', String(reader.result ?? ''))
     reader.readAsDataURL(file)
+  }
+
+  const applyBackupText = (text: string) => {
+    const result = parseResumeText(text)
+    if (!result.ok) {
+      setBackupFeedback({ tone: 'error', message: getResumeParseErrorMessage(result.error) })
+      return
+    }
+    onChange(result.data)
+    setBackupText(serializeResumeData(result.data))
+    setBackupTextDirty(false)
+    setBackupFeedback({
+      tone: result.corrected ? 'warning' : 'success',
+      message: result.corrected
+        ? '全角記号や末尾のカンマなどを補正して読み込みました。内容をご確認ください。'
+        : 'バックアップを読み込みました。',
+    })
+  }
+
+  const refreshBackupText = () => {
+    setBackupText(serializeResumeData(value))
+    setBackupTextDirty(false)
+    setBackupFeedback({ tone: 'success', message: '現在の入力内容をバックアップ用テキストへ反映しました。' })
+  }
+
+  const handleBackupFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (file.size > MAX_BACKUP_FILE_SIZE) {
+      setBackupFeedback({ tone: 'error', message: 'ファイルが大きすぎます。25MB以下のバックアップを選んでください。' })
+      event.target.value = ''
+      return
+    }
+    try {
+      const text = await file.text()
+      setBackupText(text)
+      setBackupTextDirty(true)
+      applyBackupText(text)
+    } catch {
+      setBackupFeedback({ tone: 'error', message: 'ファイルを読み取れませんでした。別のファイルをお試しください。' })
+    } finally {
+      event.target.value = ''
+    }
   }
 
   return (
@@ -628,11 +691,11 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
       <section className="form-section editor-save-section" aria-labelledby="editor-save-title">
         <div className="editor-save-heading">
           <div>
-            <h3 id="editor-save-title"><span>06</span> 入力内容を保存</h3>
+            <h3 id="editor-save-title"><span>06</span> バックアップ・復元</h3>
             <p>
               {cacheStatus === 'error'
-                ? '現在はブラウザへ自動保存できません。JSONファイルで手元に残してください。'
-                : '入力内容はこのブラウザへ自動保存されます。JSONファイルでも手元に残せます。'}
+                ? '現在はブラウザへ自動保存できません。ファイルか文字でバックアップを残してください。'
+                : '入力内容はこのブラウザへ自動保存されます。端末を変えるときは、ファイルか文字でも手元に残せます。'}
             </p>
           </div>
         </div>
@@ -665,13 +728,63 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
               </span>
             </output>
           )}
-          <button className="json-save-button" type="button" onClick={onSaveJson}>
+          <button className="json-save-button" type="button" onClick={onSaveBackupFile}>
             <SaveAltRoundedIcon aria-hidden="true" />
             <span>
-              <strong>JSONで保存</strong>
-              <small>入力内容をファイルでバックアップ</small>
+              <strong>バックアップファイルを保存</strong>
+              <small>入力内容を端末へダウンロード</small>
             </span>
           </button>
+        </div>
+        <div className="backup-restore-panel">
+          <div className="backup-restore-heading">
+            <div>
+              <h4>文字で保存・復元</h4>
+              <p id={BACKUP_TEXT_HINT_ID}>この枠の文字をメモ帳などへ保存できます。復元するときは文字を貼り付けて読み込んでください。</p>
+            </div>
+            <button className="backup-refresh-button" type="button" onClick={refreshBackupText}>
+              <RefreshRoundedIcon aria-hidden="true" /> 現在の内容を反映
+            </button>
+          </div>
+          <textarea
+            className="backup-textarea"
+            value={backupText}
+            rows={10}
+            spellCheck={false}
+            aria-label="バックアップ用テキスト"
+            aria-describedby={`${BACKUP_TEXT_HINT_ID}${backupFeedback ? ` ${BACKUP_FEEDBACK_ID}` : ''}`}
+            aria-invalid={backupFeedback?.tone === 'error'}
+            onChange={(event) => {
+              setBackupText(event.target.value)
+              setBackupTextDirty(true)
+              setBackupFeedback(null)
+            }}
+          />
+          <div className="backup-restore-actions">
+            <button className="backup-file-button" type="button" onClick={() => backupFileRef.current?.click()}>
+              <FileUploadRoundedIcon aria-hidden="true" /> ファイルから読み込む
+            </button>
+            <input
+              ref={backupFileRef}
+              hidden
+              type="file"
+              accept=".json,application/json,text/plain"
+              onChange={handleBackupFile}
+            />
+            <button className="backup-apply-button" type="button" onClick={() => applyBackupText(backupText)}>
+              <RestoreRoundedIcon aria-hidden="true" /> この文字を読み込む
+            </button>
+          </div>
+          {backupFeedback && (
+            <output
+              id={BACKUP_FEEDBACK_ID}
+              className={`backup-feedback backup-feedback-${backupFeedback.tone}`}
+              role={backupFeedback.tone === 'error' ? 'alert' : 'status'}
+              aria-live="polite"
+            >
+              {backupFeedback.message}
+            </output>
+          )}
         </div>
       </section>
     </div>

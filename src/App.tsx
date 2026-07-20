@@ -11,23 +11,15 @@ import Appbar from './components/Appbar'
 import Input from './components/Input'
 import ResumeCanvas from './components/ResumeCanvas'
 import { siteConfig } from './config/site'
-import { DEFAULT_DETAIL_KEYS, DETAIL_LIMIT, isDetailKey } from './details'
+import { normalizeResumeData } from './resumeData'
 import { serializeResumeData } from './resumeJson'
-import { initialResumeData, isAvatarFit, type CacheStatus, type ResumeData } from './types'
+import { initialResumeData, type CacheStatus, type ResumeData } from './types'
 import { getThemeColor, getThemeContrastColor, THEME_LIGHTNESS, THEME_SATURATION } from './theme'
 
 const STORAGE_KEY = 'compass-resume-v2'
 const SITE_THEME_STORAGE_KEY = 'compass-site-theme'
 const STACKED_WORKSPACE_QUERY = '(max-width:1180px)'
 type SiteTheme = 'dark' | 'light'
-type StoredResumeData = Omit<Partial<ResumeData>, 'selectedDetailKeys'> & {
-  rank?: string
-  enjoyRank?: string
-  iconCount?: string
-  snsId?: string
-  selectedDetailKeys?: unknown
-}
-
 const getInitialSiteTheme = (): SiteTheme =>
   document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
 
@@ -35,51 +27,9 @@ function getInitialData(): ResumeData {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (!stored) return initialResumeData
-    const parsed = JSON.parse(stored) as StoredResumeData
-    const highestRank = parsed.highestRank ?? parsed.rank ?? initialResumeData.highestRank
-    const seasonHighestRank = parsed.seasonHighestRank ?? initialResumeData.seasonHighestRank
-    const goldIconCount = parsed.goldIconCount ?? parsed.iconCount ?? initialResumeData.goldIconCount
-    const xId = parsed.xId ?? parsed.snsId ?? initialResumeData.xId
-    const discordId = parsed.discordId ?? initialResumeData.discordId
-    const avatarFit = isAvatarFit(parsed.avatarFit) ? parsed.avatarFit : 'cover'
-    const selectedDetailKeys = Array.isArray(parsed.selectedDetailKeys)
-      ? [...new Set(
-        parsed.selectedDetailKeys
-          .map((key: unknown) => key === 'snsId' ? 'xId' : key)
-          .filter(isDetailKey),
-      )].slice(0, DETAIL_LIMIT)
-      : DEFAULT_DETAIL_KEYS
-    const heroSelections = Array.isArray(parsed.heroSelections)
-      ? [...new Set(
-        parsed.heroSelections
-          .filter((name): name is string => typeof name === 'string' && Boolean(name.trim()))
-          .map((name) => name.trim()),
-      )].slice(0, 6)
-      : initialResumeData.heroSelections
-    const practicingHeroes = Array.isArray(parsed.practicingHeroes)
-      ? [...new Set(
-        parsed.practicingHeroes
-          .filter((name): name is string => typeof name === 'string' && heroSelections.includes(name)),
-      )]
-      : initialResumeData.practicingHeroes
-    delete parsed.rank
-    delete parsed.enjoyRank
-    delete parsed.iconCount
-    delete parsed.snsId
-    return {
-      ...initialResumeData,
-      ...parsed,
-      highestRank,
-      seasonHighestRank,
-      goldIconCount,
-      xId,
-      discordId,
-      avatarFit,
-      selectedDetailKeys,
-      heroSelections: heroSelections.length > 0 ? heroSelections : [initialResumeData.heroSelections[0]],
-      practicingHeroes,
-    }
+    return normalizeResumeData(JSON.parse(stored), 'cover') ?? initialResumeData
   } catch {
+    // Invalid browser data falls back to a usable initial resume.
     return initialResumeData
   }
 }
@@ -156,7 +106,7 @@ function App() {
     setResetDialogOpen(false)
   }
 
-  const saveJson = () => {
+  const saveBackupFile = () => {
     const blob = new Blob([serializeResumeData(resume)], { type: 'application/json;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -181,7 +131,7 @@ function App() {
               <span className="hero-kicker"><i /> #COMPASS RESUME GENERATOR</span>
               <h1><span>#コンパス履歴書</span><br />ジェネレーター</h1>
               <p>
-                画像加工アプリ不要で、#コンパス履歴書の作成が完了します。
+                画像加工アプリ不要。#コンパス履歴書が3分で完成します。
               </p>
             </div>
           </section>
@@ -191,7 +141,7 @@ function App() {
               value={resume}
               onChange={setResume}
               onReset={reset}
-              onSaveJson={saveJson}
+              onSaveBackupFile={saveBackupFile}
               onShowStorageWarning={() => setStorageWarningDialogOpen(true)}
               cacheStatus={cacheStatus}
             />
@@ -252,7 +202,7 @@ function App() {
             <p id="storage-warning-dialog-description">
               プライベートウィンドウ、ブラウザのサイトデータ・キャッシュ保存の無効化、または保存容量不足などにより、入力内容をブラウザへ保存できません。
             </p>
-            <p>このページを閉じる前に、入力欄の一番下にある「JSONで保存」からバックアップしてください。</p>
+            <p>このページを閉じる前に、入力欄の一番下にある「バックアップファイルを保存」から内容を手元に残してください。</p>
           </DialogContent>
           <DialogActions>
             <button
