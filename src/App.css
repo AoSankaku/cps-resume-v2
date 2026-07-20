@@ -24,7 +24,7 @@ main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px
 .hero-kicker, .eyebrow { display: flex; align-items: center; gap: 9px; font-size: 11px; font-weight: 900; letter-spacing: .2em; color: var(--red); }
 .hero-kicker i { width: 32px; height: 5px; background: var(--red); display: inline-block; }
 .hero-copy h1 { margin: 14px 0 18px; font-size: clamp(46px, 6.2vw, 88px); letter-spacing: -.075em; line-height: .93; font-weight: 900; }
-.hero-copy h1 span { color: transparent; -webkit-text-stroke: 2px var(--ink); }
+.hero-copy h1 span { color: var(--background); -webkit-text-fill-color: var(--background); -webkit-text-stroke: 2px var(--ink); paint-order: stroke; letter-spacing: -.035em; }
 .hero-copy p { max-width: 670px; margin: 0; color: var(--muted); font-size: 15px; font-weight: 600; line-height: 1.9; }
 .workspace { display: grid; grid-template-columns: minmax(520px, 680px) minmax(520px, 1fr); gap: clamp(24px, 3vw, 48px); align-items: start; }
 .editor-panel, .preview-panel { border: 1px solid var(--line); }
@@ -261,7 +261,8 @@ footer strong { color: #fff; font-size: 13px; }
   .appbar nav .site-theme-toggle { min-width: 40px; }
   main { padding-inline: 14px; padding-bottom: 48px; }
   .hero-intro { min-height: 0; display: block; padding: 44px 4px 34px; }
-  .hero-copy h1 { font-size: clamp(43px, 14vw, 64px); }
+  .hero-copy h1 { font-size: clamp(36px, 11vw, 52px); }
+  .hero-copy h1 span { white-space: nowrap; }
   .hero-copy p { font-size: 13px; }
   .workspace { display: flex; flex-direction: column; gap: 20px; }
   .preview-column { order: 0; width: 100%; }

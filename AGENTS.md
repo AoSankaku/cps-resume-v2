@@ -46,4 +46,5 @@
 - Follow the existing style: function components, hooks, explicit TypeScript types at boundaries, single quotes, and no semicolons.
 - Keep user-facing copy in Japanese and retain accessible labels, focus handling, disabled states, and live status announcements when changing UI behavior.
 - Use MUI for application-level UI primitives where already established; the downloadable card itself is drawn with Canvas 2D and should not depend on DOM screenshots.
+- The outlined hero text intentionally combines an opaque background-colored fill, `-webkit-text-stroke`, and `paint-order: stroke`. Do not make its fill transparent: stroke-first rendering only masks the inner half of the stroke when the later fill is opaque. Keep the outlined phrase on one line and visually verify it at 320px and 375px widths in both site themes.
 - Preserve unrelated working-tree changes. Do not commit; the repository owner handles GPG-authenticated commits.
