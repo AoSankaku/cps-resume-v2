@@ -91,6 +91,15 @@ heroes:
   - role: attacker
     fullName: ゴン=フリークス
     name: ゴン
+  - role: attacker
+    fullName: シャドウ
+    name: シャドウ
+  - role: attacker
+    fullName: アーチャー
+    name: アーチャー
+  - role: attacker
+    fullName: シャルル・リヒター
+    name: シャルル
   - role: gunner
     fullName: リリカ
     name: リリカ
@@ -166,6 +175,15 @@ heroes:
   - role: gunner
     fullName: みりぽゆ
     name: みりぽゆ
+  - role: gunner
+    fullName: メルーニャ・ランチェルナ
+    name: メルーニャ
+  - role: gunner
+    fullName: ランサー
+    name: ランサー
+  - role: gunner
+    fullName: レゼ
+    name: レゼ
   - role: tank
     fullName: ジャスティス・ハンコック
     name: ジャスティス
@@ -208,6 +226,12 @@ heroes:
   - role: tank
     fullName: 鬼ヶ式 うら
     name: うら
+  - role: tank
+    fullName: ポプ子＆ピピ美
+    name: ポプ子＆ピピ美
+  - role: tank
+    fullName: †ファースト†
+    name: ファースト
   - role: sprinter
     fullName: 十文字アタリ
     name: アタリ
@@ -254,8 +278,14 @@ heroes:
     fullName: アスナ
     name: アスナ
   - role: sprinter
+    fullName: ラム
+    name: ラム
+  - role: sprinter
     fullName: アル・ダハブ=アルカティア
     name: アル
+  - role: sprinter
+    fullName: ベル・クラネル
+    name: ベル
   - role: sprinter
     fullName: 某 <なにがし>
     name: 某
@@ -268,3 +298,12 @@ heroes:
   - role: sprinter
     fullName: チーちゃん
     name: チーちゃん
+  - role: sprinter
+    fullName: 上条当麻
+    name: 上条当麻
+  - role: sprinter
+    fullName: ーペルリニエ
+    name: ーペルリニエ
+  - role: sprinter
+    fullName: セイバー
+    name: セイバー
