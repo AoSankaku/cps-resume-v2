@@ -149,7 +149,7 @@ function App() {
         <main>
           <section className="hero-intro">
             <div className="hero-copy">
-              <span className="hero-kicker"><i /> PLAYER CARD GENERATOR</span>
+              <span className="hero-kicker"><i /> #COMPASS RESUME GENERATOR</span>
               <h1><span>#コンパス履歴書</span><br />ジェネレーター</h1>
               <p>
                 画像加工アプリ不要で、#コンパス履歴書の作成が完了します。
