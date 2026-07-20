@@ -184,8 +184,13 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
   const updateHero = (index: number, next: string) => {
     if (value.heroSelections.some((selection, itemIndex) => itemIndex !== index && selection === next)) return
     const selections = [...value.heroSelections]
+    const previousHero = selections[index]
     selections[index] = next
-    update('heroSelections', selections)
+    onChange({
+      ...value,
+      heroSelections: selections,
+      practicingHeroes: value.practicingHeroes.filter((name) => name !== previousHero),
+    })
   }
 
   const addHero = () => {
@@ -198,7 +203,22 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
 
   const removeHero = (index: number) => {
     if (value.heroSelections.length <= 1) return
-    update('heroSelections', value.heroSelections.filter((_, itemIndex) => itemIndex !== index))
+    const removedHero = value.heroSelections[index]
+    onChange({
+      ...value,
+      heroSelections: value.heroSelections.filter((_, itemIndex) => itemIndex !== index),
+      practicingHeroes: value.practicingHeroes.filter((name) => name !== removedHero),
+    })
+  }
+
+  const toggleHeroPractice = (heroName: string) => {
+    const isPracticing = value.practicingHeroes.includes(heroName)
+    update(
+      'practicingHeroes',
+      isPracticing
+        ? value.practicingHeroes.filter((name) => name !== heroName)
+        : [...value.practicingHeroes, heroName],
+    )
   }
 
   const toggleDetail = (key: DetailKey) => {
@@ -243,14 +263,13 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
 
       <section className="form-section">
         <h3><span>01</span> 基本プロフィール</h3>
-        <p className="section-note">ランクはどちらも任意です。最高到達ランクには、最高シーズン到達ランクと同じか、それより高いランクを選べます。</p>
         <div className="field-grid">
           <label className="field field-wide">
             <span>プレイヤー名 <b>必須</b></span>
             <input value={value.playerName} maxLength={22} onChange={(e) => update('playerName', e.target.value)} />
           </label>
           <label className="field field-wide">
-            <span>よみ・呼び方</span>
+            <span>よみ・呼び方 <em>任意</em></span>
             <input value={value.pronunciation} maxLength={28} onChange={(e) => update('pronunciation', e.target.value)} />
           </label>
           <label className="field">
@@ -455,27 +474,27 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
             </fieldset>
           </div>
           <div className={`custom-detail-fields${isDetailEnabled('custom') || isDetailEnabled('custom2') ? '' : ' fields-disabled'}`}>
-          {([
-            ['custom', '自由項目 1', 'customDetailLabel', 'customDetailValue'],
-            ['custom2', '自由項目 2', 'customDetailLabel2', 'customDetailValue2'],
-          ] as const).map(([detailKey, legend, labelKey, valueKey]) => {
-            const enabled = isDetailEnabled(detailKey)
-            return (
-              <fieldset disabled={!enabled} className={`custom-detail-fieldset${enabled ? '' : ' fields-disabled'}`} key={detailKey}>
-                <legend>{legend}</legend>
-                <div className="field-grid">
-                  <label className={`field${enabled ? '' : ' field-disabled'}`}>
-                    <span>見出し</span>
-                    <input value={value[labelKey]} maxLength={14} placeholder="例：好きなカード" onChange={(event) => update(labelKey, event.target.value)} />
-                  </label>
-                  <label className={`field${enabled ? '' : ' field-disabled'}`}>
-                    <span>内容</span>
-                    <input value={value[valueKey]} maxLength={28} placeholder="自由に入力" onChange={(event) => update(valueKey, event.target.value)} />
-                  </label>
-                </div>
-              </fieldset>
-            )
-          })}
+            {([
+              ['custom', '自由項目 1', 'customDetailLabel', 'customDetailValue'],
+              ['custom2', '自由項目 2', 'customDetailLabel2', 'customDetailValue2'],
+            ] as const).map(([detailKey, legend, labelKey, valueKey]) => {
+              const enabled = isDetailEnabled(detailKey)
+              return (
+                <fieldset disabled={!enabled} className={`custom-detail-fieldset${enabled ? '' : ' fields-disabled'}`} key={detailKey}>
+                  <legend>{legend}</legend>
+                  <div className="field-grid">
+                    <label className={`field${enabled ? '' : ' field-disabled'}`}>
+                      <span>見出し</span>
+                      <input value={value[labelKey]} maxLength={14} placeholder="例：好きなカード" onChange={(event) => update(labelKey, event.target.value)} />
+                    </label>
+                    <label className={`field${enabled ? '' : ' field-disabled'}`}>
+                      <span>内容</span>
+                      <input value={value[valueKey]} maxLength={28} placeholder="自由に入力" onChange={(event) => update(valueKey, event.target.value)} />
+                    </label>
+                  </div>
+                </fieldset>
+              )
+            })}
           </div>
         </div>
       </section>
@@ -483,7 +502,7 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
       <section className="form-section">
         <h3><span>03</span> 使用ヒーロー・ひとこと</h3>
         <div className="hero-selection-heading">
-          <p id="hero-selection-hint">使用ヒーローは重複なしで1〜6体まで選べます。4体以上では画像内を2列にし、英語ロール名を省略します。</p>
+          <p id="hero-selection-hint">使用ヒーローは重複なしで1〜6体まで選べます。「練習中」にすると画像内のヒーロー名に初心者マークが付きます。</p>
           <output aria-live="polite"><strong>{value.heroSelections.length}</strong> / 6</output>
         </div>
         <div className="hero-selects">
@@ -506,6 +525,16 @@ function Input({ value, onChange, onReset, onSaveJson, onShowStorageWarning, cac
                     </optgroup>
                   ))}
                 </select>
+              </label>
+              <label className="hero-practice-toggle">
+                <input
+                  type="checkbox"
+                  checked={value.practicingHeroes.includes(selection)}
+                  aria-label={`${selection}を練習中として表示`}
+                  onChange={() => toggleHeroPractice(selection)}
+                />
+                <span aria-hidden="true">🔰</span>
+                <span>練習中</span>
               </label>
               <button
                 className="hero-remove-button"

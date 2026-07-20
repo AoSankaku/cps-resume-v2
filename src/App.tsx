@@ -55,6 +55,12 @@ function getInitialData(): ResumeData {
           .map((name) => name.trim()),
       )].slice(0, 6)
       : initialResumeData.heroSelections
+    const practicingHeroes = Array.isArray(parsed.practicingHeroes)
+      ? [...new Set(
+        parsed.practicingHeroes
+          .filter((name): name is string => typeof name === 'string' && heroSelections.includes(name)),
+      )]
+      : initialResumeData.practicingHeroes
     delete parsed.rank
     delete parsed.enjoyRank
     delete parsed.iconCount
@@ -69,6 +75,7 @@ function getInitialData(): ResumeData {
       discordId,
       selectedDetailKeys,
       heroSelections: heroSelections.length > 0 ? heroSelections : [initialResumeData.heroSelections[0]],
+      practicingHeroes,
     }
   } catch {
     return initialResumeData

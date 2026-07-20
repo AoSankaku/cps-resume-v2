@@ -24,7 +24,6 @@ const RESUME_FONT_WEIGHTS = [600, 700, 800, 900] as const
 const RESUME_FONT_STATIC_TEXT = '#コンパス 履歴書 よみ 呼び方 最高デッキレベル デキレ 使用ヒーロー 未選択 応援コード 性別 アカウントレベル フレンドコード 所属ギルド ガチ度 アイコン数 推し コンパス歴 X（Twitter）のID DiscordのID プレイスタイル 主な活動時間 自由項目 金銀銅大 ひとこと よろしくお願いします'
 const roleIcons: Record<Role, string> = { attacker: attackerIcon, gunner: gunnerIcon, tank: tankIcon, sprinter: sprinterIcon }
 const roleColors: Record<Role, string> = { attacker: '#ff3855', gunner: '#2ccf75', tank: '#ffbd27', sprinter: '#4c6fff' }
-const roleLabels: Record<Role, string> = { attacker: 'ATTACKER', gunner: 'GUNNER', tank: 'TANK', sprinter: 'SPRINTER' }
 const CANVAS_RENDER_REVISION = import.meta.hot
   ? ((import.meta.hot.data.canvasRenderRevision as number | undefined) ?? 0) + 1
   : 0
@@ -76,7 +75,7 @@ const loadTwemojiImages = async (data: ResumeData): Promise<EmojiImageMap> => {
     if (typeof value === 'string') return [value]
     if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string')
     return []
-  }).join('')
+  }).join('') + (data.practicingHeroes.length > 0 ? '🔰' : '')
   const entries = await Promise.all(getTwemojiUrls(userText).map(async (url) => {
     const image = await loadImage(url).catch(() => null)
     return [url, image] as const
@@ -294,7 +293,13 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
 
       ctx.fillStyle = accentContrast
       ctx.font = `900 27px ${RESUME_FONT_FAMILY}`
-      ctx.fillText('#コンパス 履歴書', 44, 49)
+      ctx.save()
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 4
+      ctx.lineJoin = 'round'
+      ctx.strokeText('#コンパス履歴書', 44, 49)
+      ctx.fillText('#コンパス履歴書', 44, 49)
+      ctx.restore()
       ctx.font = `700 13px ${RESUME_FONT_FAMILY}`
       ctx.fillStyle = '#bcbcbc'
       ctx.letterSpacing = '4px'
@@ -350,6 +355,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       const heroStartY = 396 + (twoColumnHeroes ? (heroAreaHeight - usedHeroHeight) / 2 : 0)
       selectedHeroes.forEach((heroName, index) => {
         const role = findRole(heroName)
+        const displayName = `${data.practicingHeroes.includes(heroName) ? '🔰 ' : ''}${heroName || '未選択'}`
         const column = index % heroColumns
         const row = Math.floor(index / heroColumns)
         const x = 44 + column * (heroCardWidth + heroColumnGap)
@@ -365,15 +371,8 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         ctx.fillRect(x, y, 7, heroRowHeight)
         ctx.drawImage(icons[role], x + 17, roleIconY, roleIconSize, roleIconSize)
         ctx.fillStyle = '#161616'
-        fitText(ctx, heroName || '未選択', twoColumnHeroes ? x + heroCardWidth - heroNameX - 12 : 420, heroFontSize, 800, 11)
-        ctx.fillText(heroName || '未選択', heroNameX, y + heroRowHeight / 2 + (twoColumnHeroes ? 6 : 8))
-        if (!twoColumnHeroes) {
-          ctx.textAlign = 'right'
-          ctx.fillStyle = roleColors[role]
-          ctx.font = `900 13px ${RESUME_FONT_FAMILY}`
-          ctx.fillText(roleLabels[role], 713, y + 30)
-          ctx.textAlign = 'left'
-        }
+        fitText(ctx, displayName, x + heroCardWidth - heroNameX - 12, heroFontSize, 800, 11)
+        drawCanvasText(ctx, displayName, heroNameX, y + heroRowHeight / 2 + (twoColumnHeroes ? 6 : 8), emojiImages)
       })
 
       if (data.showPlayerIcon) {

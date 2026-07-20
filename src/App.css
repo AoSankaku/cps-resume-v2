@@ -65,7 +65,12 @@ main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px
 .hero-selection-heading output { flex: 0 0 auto; color: #8e8a85; font-size: 11px; font-weight: 900; }
 .hero-selection-heading output strong { color: var(--red); font-size: 16px; }
 .hero-selects { display: grid; gap: 10px; }
-.hero-select-row { display: grid; grid-template-columns: minmax(0, 1fr) 45px; align-items: end; gap: 8px; }
+.hero-select-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 45px; align-items: end; gap: 8px; }
+.hero-practice-toggle { min-height: 45px; padding: 8px 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #3e3f46; background: #101115; color: #a7a8ae; cursor: pointer; font-size: 11px; font-weight: 900; white-space: nowrap; }
+.hero-practice-toggle:hover { border-color: #686971; color: var(--ink); }
+.hero-practice-toggle:focus-within { outline: 3px solid var(--red); outline-offset: 2px; }
+.hero-practice-toggle:has(input:checked) { border-color: var(--red); background: hsl(var(--accent-hue) var(--accent-saturation) var(--accent-lightness) / .12); color: var(--ink); }
+.hero-practice-toggle input { width: 17px; height: 17px; margin: 0; accent-color: var(--red); }
 .hero-remove-button { width: 45px; height: 45px; border: 1px solid #3e3f46; background: #101115; color: #a7a8ae; display: grid; place-items: center; }
 .hero-remove-button:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
 .hero-remove-button:focus-visible, .hero-add-button:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
@@ -240,7 +245,8 @@ footer strong { color: #fff; font-size: 13px; }
 :root[data-theme="light"] .field input:disabled, :root[data-theme="light"] .field select:disabled, :root[data-theme="light"] .field textarea:disabled { border-color: #c8c3ba; background: #e9e6df; color: #77736c; -webkit-text-fill-color: #77736c; }
 :root[data-theme="light"] .field select option, :root[data-theme="light"] .field select optgroup { background: #fffefa; }
 :root[data-theme="light"] .field-disabled > span::after, :root[data-theme="light"] .icon-count-fieldset.field-disabled legend::after, :root[data-theme="light"] .custom-detail-fieldset.fields-disabled legend::after { border-color: #aaa59c; color: #625f59; }
-:root[data-theme="light"] .hero-remove-button, :root[data-theme="light"] .hero-add-button { border-color: #bdb8af; background: #f4f1ea; color: #47443f; }
+:root[data-theme="light"] .hero-remove-button, :root[data-theme="light"] .hero-add-button, :root[data-theme="light"] .hero-practice-toggle { border-color: #bdb8af; background: #f4f1ea; color: #47443f; }
+:root[data-theme="light"] .hero-practice-toggle:has(input:checked) { border-color: var(--red); background: hsl(var(--accent-hue) var(--accent-saturation) var(--accent-lightness) / .1); color: #202126; }
 :root[data-theme="light"] .heat-selector { border-color: #bdb8af; }
 :root[data-theme="light"] .heat-selector button { color: #66625c; }
 :root[data-theme="light"] .heat-selector button:disabled { color: #aaa59c; }
@@ -302,6 +308,9 @@ footer strong { color: #fff; font-size: 13px; }
   .download-button { min-height: 42px; padding: 9px 12px; font-size: 12px; }
   .field-grid { grid-template-columns: 1fr; }
   .field-wide { grid-column: auto; }
+  .hero-select-row { grid-template-columns: minmax(0, 1fr) 45px; }
+  .hero-practice-toggle { grid-column: 1; grid-row: 2; justify-self: start; }
+  .hero-remove-button { grid-column: 2; grid-row: 1; }
   .icon-count-input-grid, .detail-option-grid { grid-template-columns: 1fr 1fr; }
   .detail-picker-heading { align-items: flex-start; }
   .avatar-section { align-items: flex-start; flex-direction: column; }
