@@ -14,6 +14,12 @@ import StorageRoundedIcon from '@mui/icons-material/StorageRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { hero, ranks } from '../data/main'
 import { countDetailSlots, detailOptions, DETAIL_LIMIT, getDetailSlots, type DetailKey } from '../details'
+import {
+  detectAnimatedImageFormat,
+  getAnimatedImageFormatFromDataUrl,
+  MAX_ANIMATED_IMAGE_SOURCE_BYTES,
+  type AnimatedImageFormat,
+} from '../gifFrames'
 import { COMMENT_MAX_LENGTH, normalizeComment } from '../resumeData'
 import { getResumeParseErrorMessage, parseResumeText, serializeResumeData } from '../resumeJson'
 import { getThemeColor, getThemeContrastColor } from '../theme'
@@ -83,6 +89,7 @@ const FRIEND_CODE_WARNING_ID = 'friend-code-warning'
 const ICON_COUNT_HINT_ID = 'icon-count-hint'
 const BACKUP_TEXT_HINT_ID = 'backup-text-hint'
 const BACKUP_FEEDBACK_ID = 'backup-feedback'
+const AVATAR_FEEDBACK_ID = 'avatar-feedback'
 const MAX_BACKUP_FILE_SIZE = 25 * 1024 * 1024
 
 type BackupFeedback = {
@@ -199,6 +206,7 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
   const [backupText, setBackupText] = useState(() => serializeResumeData(value))
   const [backupTextDirty, setBackupTextDirty] = useState(false)
   const [backupFeedback, setBackupFeedback] = useState<BackupFeedback | null>(null)
+  const [avatarFeedback, setAvatarFeedback] = useState<BackupFeedback | null>(null)
   const seasonHighestRankIndex = ranks.indexOf(value.seasonHighestRank)
   const heroOptions = useMemo(
     () => roles.flatMap(({ key, label }) => hero[key].map((item) => ({ ...item, role: key, roleLabel: label }))),
@@ -289,11 +297,34 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
     && value.friendCode.length > 0
     && !FRIEND_CODE_PATTERN.test(value.friendCode)
 
-  const handleAvatar = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
+    const input = event.currentTarget
+    let animationFormat: AnimatedImageFormat | null = null
+    try {
+      animationFormat = detectAnimatedImageFormat(new Uint8Array(await file.arrayBuffer()))
+    } catch {
+      setAvatarFeedback({ tone: 'error', message: '画像ファイルを読み取れませんでした。' })
+      input.value = ''
+      return
+    }
+    if (animationFormat && file.size > MAX_ANIMATED_IMAGE_SOURCE_BYTES) {
+      setAvatarFeedback({ tone: 'error', message: 'アニメーション画像は15MB以下のファイルを選んでください。' })
+      input.value = ''
+      return
+    }
     const reader = new FileReader()
-    reader.onload = () => update('avatarDataUrl', String(reader.result ?? ''))
+    reader.onload = () => {
+      update('avatarDataUrl', String(reader.result ?? ''))
+      setAvatarFeedback({
+        tone: 'success',
+        message: animationFormat
+          ? `${animationFormat === 'gif' ? 'アニメーションGIF' : animationFormat === 'apng' ? 'APNG' : 'アニメーションWebP'}を読み込みました。プレビューとGIF保存に反映されます。`
+          : 'プレイヤーアイコン画像を読み込みました。',
+      })
+    }
+    reader.onerror = () => setAvatarFeedback({ tone: 'error', message: '画像ファイルを読み取れませんでした。' })
     reader.readAsDataURL(file)
   }
 
@@ -667,20 +698,47 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
         <div className="avatar-heading">
           <div className="avatar-copy">
             <h3><span>04</span> プレイヤーアイコン</h3>
-            <p>画像を選び、枠の形と画像の見せ方を選択できます。</p>
+            <p>GIF・APNG・アニメーションWebPにも対応。枠の形と画像の見せ方を選択できます。</p>
           </div>
           <div className="avatar-actions">
             <button className="upload-button" type="button" disabled={!value.showPlayerIcon} onClick={() => fileRef.current?.click()}>
               <AddPhotoAlternateRoundedIcon /> 画像を選ぶ
             </button>
             {value.avatarDataUrl && (
-              <button className="icon-button" type="button" disabled={!value.showPlayerIcon} aria-label="アイコン画像を削除" onClick={() => update('avatarDataUrl', '')}>
+              <button
+                className="icon-button"
+                type="button"
+                disabled={!value.showPlayerIcon}
+                aria-label="アイコン画像を削除"
+                onClick={() => {
+                  update('avatarDataUrl', '')
+                  setAvatarFeedback(null)
+                }}
+              >
                 <DeleteOutlineRoundedIcon />
               </button>
             )}
-            <input ref={fileRef} hidden disabled={!value.showPlayerIcon} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleAvatar} />
+            <input
+              ref={fileRef}
+              hidden
+              disabled={!value.showPlayerIcon}
+              type="file"
+              accept="image/png,image/apng,image/jpeg,image/webp,image/gif,.apng"
+              aria-describedby={avatarFeedback || getAnimatedImageFormatFromDataUrl(value.avatarDataUrl) ? AVATAR_FEEDBACK_ID : undefined}
+              onChange={(event) => void handleAvatar(event)}
+            />
           </div>
         </div>
+        {(avatarFeedback || getAnimatedImageFormatFromDataUrl(value.avatarDataUrl)) && (
+          <output
+            id={AVATAR_FEEDBACK_ID}
+            className={`avatar-feedback avatar-feedback-${avatarFeedback?.tone ?? 'gif'}`}
+            role={avatarFeedback?.tone === 'error' ? 'alert' : 'status'}
+            aria-live="polite"
+          >
+            {avatarFeedback?.message ?? 'アニメーション画像：プレビューが動き、GIF形式でも保存できます。'}
+          </output>
+        )}
         <fieldset className="avatar-choice-fieldset" disabled={!value.showPlayerIcon}>
           <legend>枠の形</legend>
           <div className="avatar-choice-options">

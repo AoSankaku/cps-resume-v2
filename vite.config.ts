@@ -69,7 +69,7 @@ export default defineConfig({
         'site.webmanifest',
       ],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,wasm,webmanifest}'],
         globIgnores: ['twemoji/**/*.svg'],
         cleanupOutdatedCaches: true,
         clientsClaim: true,

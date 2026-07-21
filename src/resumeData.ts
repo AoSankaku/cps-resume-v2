@@ -138,7 +138,7 @@ export const normalizeResumeData = (
     : initialResumeData.practicingHeroes
 
   const avatarDataUrl = readString(source, 'avatarDataUrl', '')
-  normalized.avatarDataUrl = avatarDataUrl === '' || /^data:image\/(?:png|jpeg|webp);base64,/i.test(avatarDataUrl)
+  normalized.avatarDataUrl = avatarDataUrl === '' || /^data:image\/(?:png|apng|jpeg|webp|gif);base64,/i.test(avatarDataUrl)
     ? avatarDataUrl
     : ''
 

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded'
+import GifBoxRoundedIcon from '@mui/icons-material/GifBoxRounded'
+import ImageRoundedIcon from '@mui/icons-material/ImageRounded'
+import { Encoder } from 'modern-gif'
 import { hero } from '../data/main'
 import attackerIcon from '../assets/roles/attacker.png'
 import gunnerIcon from '../assets/roles/gunner.png'
@@ -14,6 +17,19 @@ import {
   type EmojiImageMap,
 } from '../canvasText'
 import { getDetailLayout, type DetailKey } from '../details'
+import { encodeApng } from '../apngEncoder'
+import {
+  animatedGifWorkerUrl,
+  loadAnimatedImage,
+  type AnimatedImage,
+  type AnimatedImageFrame,
+} from '../animatedImage'
+import {
+  getAnimatedImageFormatFromDataUrl,
+  MAX_ANIMATION_EXPORT_BYTES,
+  MAX_ANIMATION_EXPORT_FRAMES,
+  selectAnimationFramesForExport,
+} from '../gifFrames'
 import { normalizeComment } from '../resumeData'
 import type { AvatarFit, ResumeData, Role } from '../types'
 import { getThemeColor, getThemeContrastColor } from '../theme'
@@ -39,6 +55,21 @@ type Props = {
   data: ResumeData
   headingId?: string
 }
+
+type AvatarImage = HTMLImageElement | HTMLCanvasElement
+
+type GifPreviewState =
+  | { status: 'none' }
+  | { status: 'loading' }
+  | { status: 'ready'; frameCount: number; duration: number }
+  | { status: 'error'; message: string }
+
+type AnimationExportFormat = 'gif' | 'apng'
+
+type AnimationExportState =
+  | { status: 'idle' }
+  | { status: 'encoding'; format: AnimationExportFormat; progress: number }
+  | { status: 'error'; format: AnimationExportFormat; message: string }
 
 const imageCache = new Map<string, Promise<HTMLImageElement>>()
 
@@ -117,15 +148,15 @@ const fitText = (
 
 const drawFittedImage = (
   ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
+  image: AvatarImage,
   x: number,
   y: number,
   width: number,
   height: number,
   fit: AvatarFit,
 ) => {
-  const imageWidth = image.naturalWidth || image.width
-  const imageHeight = image.naturalHeight || image.height
+  const imageWidth = image instanceof HTMLImageElement ? image.naturalWidth || image.width : image.width
+  const imageHeight = image instanceof HTMLImageElement ? image.naturalHeight || image.height : image.height
   if (fit === 'cover') {
     const ratio = Math.max(width / imageWidth, height / imageHeight)
     const sourceWidth = width / ratio
@@ -296,15 +327,144 @@ const drawSeriousLevel = (
   }
 }
 
+const drawGifFrame = (
+  canvas: HTMLCanvasElement,
+  frame: AnimatedImageFrame,
+) => {
+  if (canvas.width !== frame.width) canvas.width = frame.width
+  if (canvas.height !== frame.height) canvas.height = frame.height
+  const context = canvas.getContext('2d')
+  if (!context) return false
+  context.putImageData(new ImageData(frame.data, frame.width, frame.height), 0, 0)
+  return true
+}
+
+const drawAvatar = (
+  ctx: CanvasRenderingContext2D,
+  data: ResumeData,
+  avatar: AvatarImage | null,
+  accent: string,
+  emojiImages: EmojiImageMap,
+) => {
+  if (!data.showPlayerIcon) return
+  const avatarFrameY = 110
+  const avatarFrameHeight = 268
+  const avatarFrameRight = 1154
+  const avatarFrameWidth = data.avatarFrame === 'square' ? avatarFrameHeight : 386
+  const avatarFrameX = avatarFrameRight - avatarFrameWidth
+  const avatarFrameBottom = avatarFrameY + avatarFrameHeight
+  const avatarLabelWidth = data.avatarFrame === 'square' ? 172 : 244
+  const avatarLabelX = avatarFrameRight - avatarLabelWidth
+
+  ctx.fillStyle = '#ded6cb'
+  ctx.fillRect(avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight)
+  ctx.save()
+  roundedRect(ctx, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, 12)
+  ctx.clip()
+  if (avatar) {
+    drawFittedImage(ctx, avatar, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, data.avatarFit)
+  } else {
+    const gradient = ctx.createLinearGradient(avatarFrameX, avatarFrameY, avatarFrameRight, avatarFrameBottom)
+    gradient.addColorStop(0, '#292929')
+    gradient.addColorStop(1, accent)
+    ctx.fillStyle = gradient
+    ctx.fillRect(avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight)
+    ctx.strokeStyle = 'rgba(255,255,255,.22)'
+    ctx.lineWidth = 2
+    for (let x = avatarFrameX - 58; x < avatarFrameRight + 66; x += 32) {
+      ctx.beginPath()
+      ctx.moveTo(x, avatarFrameY)
+      ctx.lineTo(x + 220, avatarFrameBottom)
+      ctx.stroke()
+    }
+    ctx.fillStyle = '#fff'
+    ctx.font = `900 96px ${RESUME_FONT_FAMILY}`
+    ctx.textAlign = 'center'
+    drawCanvasText(
+      ctx,
+      getFirstGrapheme(data.playerName.trim()) || '#',
+      avatarFrameX + avatarFrameWidth / 2,
+      277,
+      emojiImages,
+    )
+    ctx.textAlign = 'left'
+  }
+  ctx.restore()
+  ctx.strokeStyle = '#161616'
+  ctx.lineWidth = 4
+  roundedRect(ctx, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, 12)
+  ctx.stroke()
+  ctx.fillStyle = '#161616'
+  ctx.fillRect(avatarLabelX, 354, avatarLabelWidth, 24)
+  ctx.fillStyle = '#fff'
+  ctx.font = `800 11px ${RESUME_FONT_FAMILY}`
+  ctx.textAlign = 'left'
+  ctx.fillText('PLAYER ICON', 1066, 370)
+}
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
+const createAnimationFrameRenderer = (
+  canvas: HTMLCanvasElement,
+  data: ResumeData,
+) => {
+  const workingCanvas = document.createElement('canvas')
+  workingCanvas.width = RENDER_WIDTH
+  workingCanvas.height = RENDER_HEIGHT
+  const workingContext = workingCanvas.getContext('2d')
+  const outputCanvas = document.createElement('canvas')
+  outputCanvas.width = WIDTH
+  outputCanvas.height = HEIGHT
+  const outputContext = outputCanvas.getContext('2d', { willReadFrequently: true })
+  if (!workingContext || !outputContext) {
+    throw new Error('アニメーション画像の作成に必要なCanvasを準備できませんでした。')
+  }
+
+  workingContext.drawImage(canvas, 0, 0)
+  outputContext.imageSmoothingEnabled = true
+  outputContext.imageSmoothingQuality = 'high'
+  const avatarCanvas = document.createElement('canvas')
+  const accent = getThemeColor(data.themeHue)
+  const emojiImages = new Map<string, HTMLImageElement>()
+
+  return (frame: AnimatedImageFrame) => {
+    if (!drawGifFrame(avatarCanvas, frame)) throw new Error('アニメーションのフレームを描画できませんでした。')
+    workingContext.save()
+    workingContext.setTransform(HIGH_QUALITY_EXPORT_SCALE, 0, 0, HIGH_QUALITY_EXPORT_SCALE, 0, 0)
+    drawAvatar(workingContext, data, avatarCanvas, accent, emojiImages)
+    workingContext.restore()
+    outputContext.clearRect(0, 0, WIDTH, HEIGHT)
+    outputContext.drawImage(workingCanvas, 0, 0, WIDTH, HEIGHT)
+    return outputContext.getImageData(0, 0, WIDTH, HEIGHT)
+  }
+}
+
 function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animatedImageRef = useRef<AnimatedImage | null>(null)
   const [renderedData, setRenderedData] = useState<ResumeData | null>(null)
+  const [gifPreviewState, setGifPreviewState] = useState<GifPreviewState>({ status: 'none' })
+  const [animationExportState, setAnimationExportState] = useState<AnimationExportState>({ status: 'idle' })
   const renderRevision = CANVAS_RENDER_REVISION
   const isReady = renderedData === data
   const hasRenderedPreview = renderedData !== null
+  const animatedImageFormat = getAnimatedImageFormatFromDataUrl(data.avatarDataUrl)
+  const hasAnimatedAvatar = data.showPlayerIcon && animatedImageFormat !== null
+  const showAnimationUi = hasAnimatedAvatar && gifPreviewState.status !== 'none'
 
   useEffect(() => {
     let cancelled = false
+    let animationTimer: number | null = null
+    animatedImageRef.current = null
+    setAnimationExportState({ status: 'idle' })
+    setGifPreviewState(hasAnimatedAvatar ? { status: 'loading' } : { status: 'none' })
 
     const draw = async () => {
       const nextCanvas = document.createElement('canvas')
@@ -319,7 +479,38 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         roleIconImages,
         loadTwemojiImages(data),
       ])
-      const avatar = data.showPlayerIcon && data.avatarDataUrl ? await loadImage(data.avatarDataUrl).catch(() => null) : null
+      let avatar: AvatarImage | null = data.showPlayerIcon && data.avatarDataUrl
+        ? await loadImage(data.avatarDataUrl).catch(() => null)
+        : null
+      let animatedImage: AnimatedImage | null = null
+      let animationCanvas: HTMLCanvasElement | null = null
+      if (hasAnimatedAvatar && animatedImageFormat) {
+        try {
+          animatedImage = await loadAnimatedImage(data.avatarDataUrl, animatedImageFormat)
+          if (cancelled) return
+          if (animatedImage.frames.length <= 1) {
+            setGifPreviewState({ status: 'none' })
+            animatedImage = null
+          }
+          if (animatedImage) {
+            animationCanvas = document.createElement('canvas')
+            const firstFrame = animatedImage.frames[0]
+            if (firstFrame && drawGifFrame(animationCanvas, firstFrame)) avatar = animationCanvas
+            animatedImageRef.current = animatedImage
+            setGifPreviewState({
+              status: 'ready',
+              frameCount: animatedImage.frames.length,
+              duration: animatedImage.duration,
+            })
+          }
+        } catch (error) {
+          if (cancelled) return
+          setGifPreviewState({
+            status: 'error',
+            message: error instanceof Error ? error.message : 'アニメーション画像を読み取れませんでした。',
+          })
+        }
+      }
       if (cancelled) return
       const accent = getThemeColor(data.themeHue)
       const accentContrast = getThemeContrastColor(data.themeHue)
@@ -425,60 +616,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         drawCanvasText(ctx, displayName, heroNameX, y + heroRowHeight / 2 + (twoColumnHeroes ? 6 : 8), emojiImages)
       })
 
-      if (data.showPlayerIcon) {
-        const avatarFrameY = 110
-        const avatarFrameHeight = 268
-        const avatarFrameRight = 1154
-        const avatarFrameWidth = data.avatarFrame === 'square' ? avatarFrameHeight : 386
-        const avatarFrameX = avatarFrameRight - avatarFrameWidth
-        const avatarFrameBottom = avatarFrameY + avatarFrameHeight
-        const avatarLabelWidth = data.avatarFrame === 'square' ? 172 : 244
-        const avatarLabelX = avatarFrameRight - avatarLabelWidth
-
-        ctx.fillStyle = '#ded6cb'
-        ctx.fillRect(avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight)
-        ctx.save()
-        roundedRect(ctx, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, 12)
-        ctx.clip()
-        if (avatar) {
-          drawFittedImage(ctx, avatar, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, data.avatarFit)
-        } else {
-          const gradient = ctx.createLinearGradient(avatarFrameX, avatarFrameY, avatarFrameRight, avatarFrameBottom)
-          gradient.addColorStop(0, '#292929')
-          gradient.addColorStop(1, accent)
-          ctx.fillStyle = gradient
-          ctx.fillRect(avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight)
-          ctx.strokeStyle = 'rgba(255,255,255,.22)'
-          ctx.lineWidth = 2
-          for (let x = avatarFrameX - 58; x < avatarFrameRight + 66; x += 32) {
-            ctx.beginPath()
-            ctx.moveTo(x, avatarFrameY)
-            ctx.lineTo(x + 220, avatarFrameBottom)
-            ctx.stroke()
-          }
-          ctx.fillStyle = '#fff'
-          ctx.font = `900 96px ${RESUME_FONT_FAMILY}`
-          ctx.textAlign = 'center'
-          drawCanvasText(
-            ctx,
-            getFirstGrapheme(data.playerName.trim()) || '#',
-            avatarFrameX + avatarFrameWidth / 2,
-            277,
-            emojiImages,
-          )
-          ctx.textAlign = 'left'
-        }
-        ctx.restore()
-        ctx.strokeStyle = '#161616'
-        ctx.lineWidth = 4
-        roundedRect(ctx, avatarFrameX, avatarFrameY, avatarFrameWidth, avatarFrameHeight, 12)
-        ctx.stroke()
-        ctx.fillStyle = '#161616'
-        ctx.fillRect(avatarLabelX, 354, avatarLabelWidth, 24)
-        ctx.fillStyle = '#fff'
-        ctx.font = `800 11px ${RESUME_FONT_FAMILY}`
-        ctx.fillText('PLAYER ICON', 1066, 370)
-      }
+      drawAvatar(ctx, data, avatar, accent, emojiImages)
 
       const detailMap: Record<DetailKey, { label: string; value: string; icons?: string[]; seriousLevel?: number }> = {
         supportCode: { label: '応援コード', value: data.applicationCode },
@@ -559,6 +697,23 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       visibleContext.clearRect(0, 0, RENDER_WIDTH, RENDER_HEIGHT)
       visibleContext.drawImage(nextCanvas, 0, 0)
       setRenderedData(data)
+
+      if (animatedImage && animationCanvas && animatedImage.frames.length > 1) {
+        let frameIndex = 0
+        const drawNextFrame = () => {
+          if (cancelled || !animationCanvas || !animatedImage) return
+          frameIndex = (frameIndex + 1) % animatedImage.frames.length
+          const currentFrame = animatedImage.frames[frameIndex]
+          if (drawGifFrame(animationCanvas, currentFrame)) {
+            visibleContext.save()
+            visibleContext.scale(HIGH_QUALITY_EXPORT_SCALE, HIGH_QUALITY_EXPORT_SCALE)
+            drawAvatar(visibleContext, data, animationCanvas, accent, emojiImages)
+            visibleContext.restore()
+          }
+          animationTimer = window.setTimeout(drawNextFrame, currentFrame.delay)
+        }
+        animationTimer = window.setTimeout(drawNextFrame, animatedImage.frames[0].delay)
+      }
     }
 
     const frame = window.requestAnimationFrame(() => draw().catch(() => {
@@ -567,8 +722,9 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
     return () => {
       cancelled = true
       window.cancelAnimationFrame(frame)
+      if (animationTimer !== null) window.clearTimeout(animationTimer)
     }
-  }, [data, renderRevision])
+  }, [animatedImageFormat, data, hasAnimatedAvatar, renderRevision])
 
   const download = (scale: number) => {
     const canvas = canvasRef.current
@@ -583,14 +739,93 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
     exportContext.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height)
     exportCanvas.toBlob((blob) => {
       if (!blob) return
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
       const safeName = data.playerName.trim().replace(/[\\/:*?"<>|]/g, '_') || 'compass-resume'
-      link.href = url
-      link.download = `${safeName}-履歴書${scale === HIGH_QUALITY_EXPORT_SCALE ? '-高画質' : ''}.png`
-      link.click()
-      URL.revokeObjectURL(url)
+      downloadBlob(blob, `${safeName}-履歴書${scale === HIGH_QUALITY_EXPORT_SCALE ? '-高画質' : ''}.png`)
     }, 'image/png')
+  }
+
+  const downloadGif = async () => {
+    const canvas = canvasRef.current
+    const animatedImage = animatedImageRef.current
+    if (!canvas || !isReady || !animatedImage || animationExportState.status === 'encoding') return
+
+    setAnimationExportState({ status: 'encoding', format: 'gif', progress: 0 })
+    try {
+      const frames = selectAnimationFramesForExport(animatedImage.frames)
+      const renderFrame = createAnimationFrameRenderer(canvas, data)
+      const encoder = new Encoder({
+        workerUrl: animatedGifWorkerUrl,
+        width: WIDTH,
+        height: HEIGHT,
+        looped: true,
+        loopCount: 0,
+        maxColors: 128,
+      })
+
+      for (const [index, frame] of frames.entries()) {
+        const imageData = renderFrame(frame)
+        await encoder.encode({ data: imageData.data, width: WIDTH, height: HEIGHT, delay: frame.delay })
+        setAnimationExportState({
+          status: 'encoding',
+          format: 'gif',
+          progress: Math.round((index + 1) / frames.length * 100),
+        })
+      }
+
+      const blob = await encoder.flush('blob')
+      if (blob.size > MAX_ANIMATION_EXPORT_BYTES) {
+        throw new Error('GIFがXのWeb版上限15MBを超えました。短いGIFか動きの少ないGIFをお試しください。')
+      }
+      const safeName = data.playerName.trim().replace(/[\\/:*?"<>|]/g, '_') || 'compass-resume'
+      downloadBlob(blob, `${safeName}-履歴書.gif`)
+      setAnimationExportState({ status: 'idle' })
+    } catch (error) {
+      setAnimationExportState({
+        status: 'error',
+        format: 'gif',
+        message: error instanceof Error ? error.message : 'GIFを作成できませんでした。',
+      })
+    }
+  }
+
+  const downloadApng = async () => {
+    const canvas = canvasRef.current
+    const animatedImage = animatedImageRef.current
+    if (!canvas || !isReady || !animatedImage || animationExportState.status === 'encoding') return
+
+    setAnimationExportState({ status: 'encoding', format: 'apng', progress: 0 })
+    try {
+      const frames = selectAnimationFramesForExport(animatedImage.frames)
+      const renderFrame = createAnimationFrameRenderer(canvas, data)
+      const rgbaFrames: ArrayBuffer[] = []
+      const delays: number[] = []
+      for (const [index, frame] of frames.entries()) {
+        const imageData = renderFrame(frame)
+        rgbaFrames.push(imageData.data.buffer as ArrayBuffer)
+        delays.push(frame.delay)
+        setAnimationExportState({
+          status: 'encoding',
+          format: 'apng',
+          progress: Math.round((index + 1) / frames.length * 75),
+        })
+      }
+
+      setAnimationExportState({ status: 'encoding', format: 'apng', progress: 80 })
+      const buffer = await encodeApng(rgbaFrames, delays, WIDTH, HEIGHT)
+      const blob = new Blob([buffer], { type: 'image/apng' })
+      if (blob.size > MAX_ANIMATION_EXPORT_BYTES) {
+        throw new Error('APNGが15MBを超えました。短いアニメーションか動きの少ない画像をお試しください。')
+      }
+      const safeName = data.playerName.trim().replace(/[\\/:*?"<>|]/g, '_') || 'compass-resume'
+      downloadBlob(blob, `${safeName}-履歴書.apng`)
+      setAnimationExportState({ status: 'idle' })
+    } catch (error) {
+      setAnimationExportState({
+        status: 'error',
+        format: 'apng',
+        message: error instanceof Error ? error.message : 'APNGを作成できませんでした。',
+      })
+    }
   }
 
   return (
@@ -600,7 +835,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
           <span className="eyebrow">LIVE PREVIEW</span>
           <h2 id={headingId}>完成イメージ</h2>
         </div>
-        <div className="download-actions" aria-label="保存画質を選択">
+        <div className="download-actions" aria-label="保存形式と画質を選択">
           <button className="download-button download-button-standard" type="button" onClick={() => download(STANDARD_EXPORT_SCALE)} disabled={!isReady}>
             <DownloadRoundedIcon />
             <span>PNGで保存<small>1800 × 1013</small></span>
@@ -609,6 +844,38 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
             <DownloadRoundedIcon />
             <span>高画質で保存<small>3600 × 2025</small></span>
           </button>
+          {showAnimationUi && (
+            <>
+              <button
+                className="download-button"
+                type="button"
+                onClick={() => void downloadGif()}
+                disabled={!isReady || gifPreviewState.status !== 'ready' || animationExportState.status === 'encoding'}
+              >
+                <GifBoxRoundedIcon />
+                <span>
+                  {animationExportState.status === 'encoding' && animationExportState.format === 'gif'
+                    ? `GIF作成中 ${animationExportState.progress}%`
+                    : 'GIFで保存'}
+                  <small>1200 × 675</small>
+                </span>
+              </button>
+              <button
+                className="download-button"
+                type="button"
+                onClick={() => void downloadApng()}
+                disabled={!isReady || gifPreviewState.status !== 'ready' || animationExportState.status === 'encoding'}
+              >
+                <ImageRoundedIcon />
+                <span>
+                  {animationExportState.status === 'encoding' && animationExportState.format === 'apng'
+                    ? `APNG作成中 ${animationExportState.progress}%`
+                    : 'APNGで保存'}
+                  <small>1200 × 675</small>
+                </span>
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div className="canvas-frame" aria-busy={!isReady}>
@@ -623,6 +890,26 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
         )}
         <canvas ref={canvasRef} width={RENDER_WIDTH} height={RENDER_HEIGHT} aria-label={`${data.playerName}さんのコンパス履歴書プレビュー`} />
       </div>
+      {showAnimationUi && (
+        <p
+          className={`preview-note${gifPreviewState.status === 'error' || animationExportState.status === 'error' ? ' preview-note-error' : ''}`}
+          role={gifPreviewState.status === 'error' || animationExportState.status === 'error' ? 'alert' : 'status'}
+          aria-live="polite"
+        >
+          <span aria-hidden="true" />
+          {animationExportState.status === 'error'
+            ? animationExportState.message
+            : animationExportState.status === 'encoding'
+              ? `${animationExportState.format === 'gif' ? 'GIF' : 'APNG'}を作成しています（${animationExportState.progress}%）`
+              : gifPreviewState.status === 'loading'
+                ? 'アニメーション画像を解析しています…'
+                : gifPreviewState.status === 'error'
+                  ? gifPreviewState.message
+                  : gifPreviewState.status === 'ready'
+                    ? `${gifPreviewState.frameCount}フレーム・約${(gifPreviewState.duration / 1000).toFixed(1)}秒。GIF・APNG保存は最大10秒・${MAX_ANIMATION_EXPORT_FRAMES}フレームです。`
+                    : ''}
+        </p>
+      )}
     </section>
   )
 }

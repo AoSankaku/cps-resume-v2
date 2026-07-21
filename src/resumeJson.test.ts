@@ -24,6 +24,30 @@ describe('parseResumeText', () => {
     expect(result.data.avatarFrame).toBe('landscape')
   })
 
+  test('GIFのプレイヤーアイコンをバックアップから復元する', () => {
+    const avatarDataUrl = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='
+    const result = parseResumeText(JSON.stringify({
+      playerName: 'GIFテスト',
+      avatarDataUrl,
+    }))
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.avatarDataUrl).toBe(avatarDataUrl)
+  })
+
+  test('APNGのプレイヤーアイコンをバックアップから復元する', () => {
+    const avatarDataUrl = 'data:image/apng;base64,iVBORw0KGgo='
+    const result = parseResumeText(JSON.stringify({
+      playerName: 'APNGテスト',
+      avatarDataUrl,
+    }))
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.avatarDataUrl).toBe(avatarDataUrl)
+  })
+
   test('枠情報がない以前のデータは正方形へ移行する', () => {
     const result = parseResumeText(JSON.stringify({ playerName: 'テスト' }))
 
