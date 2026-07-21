@@ -13,6 +13,12 @@ import SaveAltRoundedIcon from '@mui/icons-material/SaveAltRounded'
 import StorageRoundedIcon from '@mui/icons-material/StorageRounded'
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { hero, ranks } from '../data/main'
+import {
+  COMMENT_COMPACT_FONT_SIZE,
+  COMMENT_FONT_FAMILY,
+  COMMENT_NORMAL_FONT_SIZE,
+  getCommentCanvasLayout,
+} from '../commentLayout'
 import { countDetailSlots, detailOptions, DETAIL_LIMIT, getDetailSlots, type DetailKey } from '../details'
 import {
   detectAnimatedImageFormat,
@@ -20,10 +26,11 @@ import {
   MAX_ANIMATED_IMAGE_SOURCE_BYTES,
   type AnimatedImageFormat,
 } from '../gifFrames'
-import { COMMENT_MAX_LENGTH, normalizeComment } from '../resumeData'
+import { COMMENT_MAX_LENGTH, countCommentCharacters, normalizeComment } from '../resumeData'
 import { getResumeParseErrorMessage, parseResumeText, serializeResumeData } from '../resumeJson'
 import { getThemeColor, getThemeContrastColor } from '../theme'
 import type { AvatarFit, AvatarFrame, CacheStatus, ResumeData, Role } from '../types'
+import TwemojiPreview from './TwemojiPreview'
 
 type Props = {
   value: ResumeData
@@ -90,6 +97,7 @@ const ICON_COUNT_HINT_ID = 'icon-count-hint'
 const BACKUP_TEXT_HINT_ID = 'backup-text-hint'
 const BACKUP_FEEDBACK_ID = 'backup-feedback'
 const AVATAR_FEEDBACK_ID = 'avatar-feedback'
+const COMMENT_WARNING_ID = 'comment-warning'
 const MAX_BACKUP_FILE_SIZE = 25 * 1024 * 1024
 
 type BackupFeedback = {
@@ -207,7 +215,9 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
   const [backupTextDirty, setBackupTextDirty] = useState(false)
   const [backupFeedback, setBackupFeedback] = useState<BackupFeedback | null>(null)
   const [avatarFeedback, setAvatarFeedback] = useState<BackupFeedback | null>(null)
+  const [commentOverflows, setCommentOverflows] = useState(false)
   const seasonHighestRankIndex = ranks.indexOf(value.seasonHighestRank)
+  const commentCharacterCount = countCommentCharacters(value.comment)
   const heroOptions = useMemo(
     () => roles.flatMap(({ key, label }) => hero[key].map((item) => ({ ...item, role: key, roleLabel: label }))),
     [],
@@ -216,6 +226,24 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
   useEffect(() => {
     if (!backupTextDirty) setBackupText(serializeResumeData(value))
   }, [backupTextDirty, value])
+
+  useEffect(() => {
+    let active = true
+    const updateCommentOverflow = () => {
+      const ctx = document.createElement('canvas').getContext('2d')
+      if (ctx && active) setCommentOverflows(getCommentCanvasLayout(ctx, value.comment).truncated)
+    }
+
+    updateCommentOverflow()
+    void Promise.allSettled([
+      document.fonts.load(`800 ${COMMENT_NORMAL_FONT_SIZE}px ${COMMENT_FONT_FAMILY}`, value.comment),
+      document.fonts.load(`800 ${COMMENT_COMPACT_FONT_SIZE}px ${COMMENT_FONT_FAMILY}`, value.comment),
+    ]).then(updateCommentOverflow)
+
+    return () => {
+      active = false
+    }
+  }, [value.comment])
 
   const update = <K extends keyof ResumeData>(key: K, next: ResumeData[K]) => {
     onChange({ ...value, [key]: next })
@@ -391,10 +419,12 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
           <label className="field field-wide">
             <span>プレイヤー名 <b>必須</b></span>
             <input value={value.playerName} maxLength={22} onChange={(e) => update('playerName', e.target.value)} />
+            <TwemojiPreview text={value.playerName} />
           </label>
           <label className="field field-wide">
             <span>よみ・呼び方 <em>任意</em></span>
             <input value={value.pronunciation} maxLength={28} onChange={(e) => update('pronunciation', e.target.value)} />
+            <TwemojiPreview text={value.pronunciation} />
           </label>
           <label className="field">
             <span>最高到達ランク <em>任意</em></span>
@@ -497,6 +527,7 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
                 placeholder="例：男・女・♂・♀"
                 onChange={(event) => update('gender', event.target.value)}
               />
+              <TwemojiPreview text={value.gender} />
             </label>
             <label className={`field${isDetailEnabled('accountLevel') ? '' : ' field-disabled'}`}>
               <span>アカウントレベル</span>
@@ -522,26 +553,32 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
             <label className={`field${isDetailEnabled('guild') ? '' : ' field-disabled'}`}>
               <span>所属ギルド</span>
               <input disabled={!isDetailEnabled('guild')} value={value.guild} maxLength={18} onChange={(event) => update('guild', event.target.value)} />
+              <TwemojiPreview text={value.guild} />
             </label>
             <label className={`field${isDetailEnabled('playHistory') ? '' : ' field-disabled'}`}>
               <span>コンパス歴</span>
               <input disabled={!isDetailEnabled('playHistory')} value={value.playHistory} maxLength={12} onChange={(event) => update('playHistory', event.target.value)} />
+              <TwemojiPreview text={value.playHistory} />
             </label>
             <label className={`field${isDetailEnabled('xId') ? '' : ' field-disabled'}`}>
               <span>X（Twitter）のID</span>
               <input disabled={!isDetailEnabled('xId')} value={value.xId} maxLength={28} placeholder="@player_id" onChange={(event) => update('xId', event.target.value)} />
+              <TwemojiPreview text={value.xId} />
             </label>
             <label className={`field${isDetailEnabled('discordId') ? '' : ' field-disabled'}`}>
               <span>DiscordのID</span>
               <input disabled={!isDetailEnabled('discordId')} value={value.discordId} maxLength={32} placeholder="player_id" onChange={(event) => update('discordId', event.target.value)} />
+              <TwemojiPreview text={value.discordId} />
             </label>
             <label className={`field${isDetailEnabled('playStyle') ? '' : ' field-disabled'}`}>
               <span>プレイスタイル</span>
               <input disabled={!isDetailEnabled('playStyle')} value={value.playStyle} maxLength={24} onChange={(event) => update('playStyle', event.target.value)} />
+              <TwemojiPreview text={value.playStyle} />
             </label>
             <label className={`field${isDetailEnabled('activeTime') ? '' : ' field-disabled'}`}>
               <span>主な活動時間</span>
               <input disabled={!isDetailEnabled('activeTime')} value={value.activeTime} maxLength={24} onChange={(event) => update('activeTime', event.target.value)} />
+              <TwemojiPreview text={value.activeTime} />
             </label>
             <label className={`field field-wide${isDetailEnabled('favoriteHero') ? '' : ' field-disabled'}`}>
               <span>推しヒーロー</span>
@@ -615,10 +652,12 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
                     <label className={`field${enabled ? '' : ' field-disabled'}`}>
                       <span>見出し</span>
                       <input value={value[labelKey]} maxLength={14} placeholder="例：好きなカード" onChange={(event) => update(labelKey, event.target.value)} />
+                      <TwemojiPreview text={value[labelKey]} />
                     </label>
                     <label className={`field${enabled ? '' : ' field-disabled'}`}>
                       <span>内容</span>
                       <input value={value[valueKey]} maxLength={valueMaxLength} placeholder="自由に入力" onChange={(event) => update(valueKey, event.target.value)} />
+                      <TwemojiPreview text={value[valueKey]} />
                     </label>
                   </div>
                 </fieldset>
@@ -685,11 +724,18 @@ function Input({ value, onChange, onReset, onSaveBackupFile, onShowStorageWarnin
             <span>ひとこと</span>
             <textarea
               value={value.comment}
-              maxLength={COMMENT_MAX_LENGTH}
-              rows={2}
+              rows={3}
+              aria-invalid={commentOverflows}
+              aria-describedby={commentOverflows ? COMMENT_WARNING_ID : undefined}
               onChange={(e) => update('comment', normalizeComment(e.target.value))}
             />
-            <small>{value.comment.length} / {COMMENT_MAX_LENGTH}</small>
+            <TwemojiPreview text={value.comment} />
+            {commentOverflows && (
+              <small id={COMMENT_WARNING_ID} className="field-warning" role="alert">
+                履歴書では3行を超える部分が「…」で省略されます。文章を短くしてください。
+              </small>
+            )}
+            <small>{commentCharacterCount} / {COMMENT_MAX_LENGTH}</small>
           </label>
         </div>
       </section>

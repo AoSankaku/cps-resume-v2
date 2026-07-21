@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { COMMENT_MAX_LENGTH, countCommentCharacters } from './resumeData'
 import { parseResumeText, serializeResumeData } from './resumeJson'
 import { initialResumeData } from './types'
 
@@ -114,16 +115,16 @@ describe('parseResumeText', () => {
     expect(result.data.selectedDetailKeys).toEqual(['favoriteHero', 'custom3'])
   })
 
-  test('ひとことを2行までに収める', () => {
+  test('ひとことを3行・上限文字数までに収める', () => {
     const result = parseResumeText(JSON.stringify({
-      comment: `1行目\r\n2行目\n3行目${'あ'.repeat(90)}`,
+      comment: `1行目\r\n2行目\n3行目${'あ'.repeat(COMMENT_MAX_LENGTH)}`,
     }))
 
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.data.comment).toStartWith('1行目\n2行目 3行目')
-    expect(result.data.comment.match(/\n/g)).toHaveLength(1)
-    expect(result.data.comment.length).toBe(90)
+    expect(result.data.comment).toStartWith('1行目\n2行目\n3行目')
+    expect(result.data.comment.match(/\n/g)).toHaveLength(2)
+    expect(countCommentCharacters(result.data.comment)).toBe(COMMENT_MAX_LENGTH)
   })
 
   test('別形式のデータは拒否する', () => {

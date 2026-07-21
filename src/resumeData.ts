@@ -2,12 +2,20 @@ import { DEFAULT_DETAIL_KEYS, isDetailKey, limitDetailKeys } from './details'
 import { normalizeThemeHue } from './theme'
 import { initialResumeData, isAvatarFit, isAvatarFrame, type AvatarFit, type ResumeData } from './types'
 
-export const COMMENT_MAX_LENGTH = 90
+export const COMMENT_MAX_LENGTH = 220
+
+const commentSegmenter = new Intl.Segmenter('ja', { granularity: 'grapheme' })
+
+const getCommentCharacters = (value: string) =>
+  [...commentSegmenter.segment(value)].map(({ segment }) => segment)
+
+export const countCommentCharacters = (value: string) => getCommentCharacters(value).length
 
 export const normalizeComment = (value: string) => {
-  const [firstLine = '', ...remainingLines] = value.replace(/\r\n?/g, '\n').split('\n')
-  const secondLine = remainingLines.join(' ')
-  return `${firstLine}${remainingLines.length > 0 ? `\n${secondLine}` : ''}`.slice(0, COMMENT_MAX_LENGTH)
+  const lines = value.replace(/\r\n?/g, '\n').split('\n')
+  const normalizedLines = lines.slice(0, 3)
+  if (lines.length > 3) normalizedLines[2] = lines.slice(2).join(' ')
+  return getCommentCharacters(normalizedLines.join('\n')).slice(0, COMMENT_MAX_LENGTH).join('')
 }
 
 type ResumeDataRecord = Record<string, unknown>

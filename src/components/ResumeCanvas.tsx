@@ -15,9 +15,9 @@ import {
   getFirstGrapheme,
   getTwemojiUrls,
   measureCanvasText,
-  splitGraphemes,
   type EmojiImageMap,
 } from '../canvasText'
+import { getCommentCanvasLayout } from '../commentLayout'
 import { getDetailLayout, type DetailKey } from '../details'
 import { encodeApng } from '../apngEncoder'
 import {
@@ -188,49 +188,10 @@ const drawWrappedText = (
   x: number,
   containerY: number,
   containerHeight: number,
-  maxWidth: number,
-  lineHeight: number,
-  maxLines: number,
   emojiImages: EmojiImageMap,
 ) => {
-  const characters = splitGraphemes(text.replace(/\r\n?/g, '\n'))
-  const lines: string[] = []
-  let line = ''
-  let truncated = false
-  for (let index = 0; index < characters.length; index += 1) {
-    const character = characters[index]
-    if (character === '\n') {
-      lines.push(line)
-      line = ''
-      if (lines.length === maxLines) {
-        truncated = index < characters.length - 1
-        break
-      }
-      continue
-    }
-    const candidate = line + character
-    if (measureCanvasText(ctx, candidate) > maxWidth && line) {
-      lines.push(line)
-      if (lines.length === maxLines) {
-        truncated = true
-        break
-      }
-      line = character
-    } else {
-      line = candidate
-    }
-  }
-  if (line && lines.length < maxLines) lines.push(line)
-  if (lines.length === 0) lines.push('')
-  if (truncated) {
-    const lastIndex = lines.length - 1
-    let lastLine = lines[lastIndex]
-    while (lastLine && measureCanvasText(ctx, `${lastLine}…`) > maxWidth) {
-      lastLine = splitGraphemes(lastLine).slice(0, -1).join('')
-    }
-    lines[lastIndex] = `${lastLine}…`
-  }
-
+  const { font, lineHeight, lines } = getCommentCanvasLayout(ctx, text)
+  ctx.font = font
   const metrics = lines.map((item) => ctx.measureText(item || 'あ'))
   const ascent = Math.max(...metrics.map((item) => item.actualBoundingBoxAscent))
   const descent = Math.max(...metrics.map((item) => item.actualBoundingBoxDescent))
@@ -730,9 +691,8 @@ function ResumeCanvas({
       ctx.fill()
       ctx.fillStyle = '#fff'
       const comment = normalizeComment(data.comment) || 'よろしくお願いします！'
-      ctx.font = `800 18px ${RESUME_FONT_FAMILY}`
       ctx.textAlign = 'left'
-      drawWrappedText(ctx, comment, 174, 602, 49, 962, 22, 2, emojiImages)
+      drawWrappedText(ctx, comment, 174, 602, 49, emojiImages)
 
       ctx.fillStyle = '#77736e'
       ctx.font = `600 9px ${RESUME_FONT_FAMILY}`
