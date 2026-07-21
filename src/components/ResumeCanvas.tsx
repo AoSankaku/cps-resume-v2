@@ -30,6 +30,7 @@ import {
   MAX_ANIMATION_EXPORT_FRAMES,
   selectAnimationFramesForExport,
 } from '../gifFrames'
+import { getResumeImageFilenameStem } from '../imageFilename'
 import { normalizeComment } from '../resumeData'
 import type { AvatarFit, ResumeData, Role } from '../types'
 import { getThemeColor, getThemeContrastColor } from '../theme'
@@ -739,8 +740,8 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
     exportContext.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height)
     exportCanvas.toBlob((blob) => {
       if (!blob) return
-      const safeName = data.playerName.trim().replace(/[\\/:*?"<>|]/g, '_') || 'compass-resume'
-      downloadBlob(blob, `${safeName}-履歴書${scale === HIGH_QUALITY_EXPORT_SCALE ? '-高画質' : ''}.png`)
+      const filenameStem = getResumeImageFilenameStem(data)
+      downloadBlob(blob, `${filenameStem}${scale === HIGH_QUALITY_EXPORT_SCALE ? '-large' : ''}.png`)
     }, 'image/png')
   }
 
@@ -776,8 +777,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       if (blob.size > MAX_ANIMATION_EXPORT_BYTES) {
         throw new Error('GIFがXのWeb版上限15MBを超えました。短いGIFか動きの少ないGIFをお試しください。')
       }
-      const safeName = data.playerName.trim().replace(/[\\/:*?"<>|]/g, '_') || 'compass-resume'
-      downloadBlob(blob, `${safeName}-履歴書.gif`)
+      downloadBlob(blob, `${getResumeImageFilenameStem(data)}.gif`)
       setAnimationExportState({ status: 'idle' })
     } catch (error) {
       setAnimationExportState({
@@ -816,8 +816,7 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
       if (blob.size > MAX_ANIMATION_EXPORT_BYTES) {
         throw new Error('APNGが15MBを超えました。短いアニメーションか動きの少ない画像をお試しください。')
       }
-      const safeName = data.playerName.trim().replace(/[\\/:*?"<>|]/g, '_') || 'compass-resume'
-      downloadBlob(blob, `${safeName}-履歴書.apng`)
+      downloadBlob(blob, `${getResumeImageFilenameStem(data)}.apng`)
       setAnimationExportState({ status: 'idle' })
     } catch (error) {
       setAnimationExportState({
