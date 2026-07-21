@@ -8,6 +8,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import './App.css'
 import Appbar from './components/Appbar'
+import FaqSection from './components/FaqSection'
 import Input from './components/Input'
 import ResumeCanvas from './components/ResumeCanvas'
 import { siteConfig } from './config/site'
@@ -146,14 +147,20 @@ function App() {
               cacheStatus={cacheStatus}
             />
             <div className="preview-column preview-column-primary">
-              <ResumeCanvas data={deferredResume} />
+              <ResumeCanvas
+                data={deferredResume}
+                showShareActions={!showBottomPreview}
+                showXShareOnly={showBottomPreview}
+              />
             </div>
             {showBottomPreview && (
               <div className="preview-column preview-column-bottom">
-                <ResumeCanvas data={deferredResume} headingId="preview-title-bottom" />
+                <ResumeCanvas data={deferredResume} headingId="preview-title-bottom" showShareActions />
               </div>
             )}
           </div>
+
+          <FaqSection />
         </main>
         <footer>
           <div className="footer-brand">
@@ -165,7 +172,10 @@ function App() {
               くらふとすきー
             </a>
           </div>
-          <span>入力した情報・画像はサーバーへ送信されません。</span>
+          <div className="footer-notes">
+            <span>入力した情報・画像はサーバーへ送信されません。</span>
+            <span>当サイトは非公式であり、#コンパス運営およびNHN PlayArt株式会社とは一切関係ありません。</span>
+          </div>
         </footer>
         <Dialog
           className="reset-dialog"

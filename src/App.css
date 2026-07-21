@@ -17,6 +17,16 @@
 .appbar nav a, .appbar nav button { min-height: 40px; border: 0; color: #fff; background: transparent; display: flex; align-items: center; gap: 7px; padding: 8px 10px; text-decoration: none; font-weight: 800; font-size: 13px; }
 .appbar nav a:hover, .appbar nav button:hover { background: #24252a; }
 .appbar nav .site-theme-toggle { min-width: 84px; border: 1px solid #3d3e44; background: #18191d; }
+.site-share-menu .MuiPaper-root { min-width: 280px; border: 1px solid var(--line); border-top: 3px solid var(--red); border-radius: 0; background: var(--surface-raised); background-image: none; color: var(--ink); box-shadow: 8px 8px 0 rgba(0,0,0,.32); }
+.site-share-menu .MuiMenu-list { padding: 6px; }
+.site-share-menu .MuiMenuItem-root { min-height: 58px; gap: 4px; padding: 9px 12px; }
+.site-share-menu .MuiMenuItem-root:hover, .site-share-menu .MuiMenuItem-root.Mui-focusVisible { background: hsl(var(--accent-hue) var(--accent-saturation) var(--accent-lightness) / .1); }
+.site-share-menu .MuiListItemText-primary { font-size: 13px; font-weight: 900; }
+.site-share-menu .MuiListItemText-secondary { margin-top: 2px; color: var(--muted); font-size: 9px; font-weight: 700; }
+.site-share-menu .site-share-icon { min-width: 34px; font-size: 20px; }
+.site-share-icon-x { color: var(--ink); }
+.site-share-icon-discord { color: #5865f2; }
+.site-share-icon-line { color: #06c755; }
 
 main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px; }
 .hero-intro { min-height: 330px; display: flex; align-items: flex-end; justify-content: space-between; gap: 50px; padding: 58px 0 48px; position: relative; }
@@ -255,6 +265,16 @@ main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px
 .download-button:disabled { cursor: wait; opacity: .55; transform: none; }
 .canvas-frame { position: relative; overflow: hidden; border: 1px solid #4b4b4b; background: #111; }
 .canvas-frame canvas { width: 100%; height: auto; display: block; }
+.preview-actions { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.preview-actions .download-actions { flex: 1 1 360px; justify-content: flex-start; }
+.share-actions { flex: 0 0 auto; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.share-button { min-width: 190px; min-height: 46px; cursor: pointer; text-decoration: none; }
+.share-button:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+.x-share-button { min-width: 250px; min-height: 58px; border: 2px solid #f3efe7; padding: 13px 22px; background: #050506; color: #f3efe7; box-shadow: 6px 6px 0 var(--red); font-size: 15px; }
+.x-share-button svg { flex: 0 0 auto; font-size: 23px; }
+.x-share-button small { font-size: 10px; letter-spacing: .04em; }
+.x-share-button:hover { box-shadow: 3px 3px 0 var(--red); }
+.share-feedback { margin: 12px 0 0; padding: 9px 11px; border-left: 3px solid currentColor; background: rgba(170, 48, 48, .12); color: #f08b8b; font-size: 10px; font-weight: 800; line-height: 1.6; }
 .canvas-loading { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 14px; background: #171717; color: #a8a8a8; }
 .canvas-loading-spinner { width: 28px; height: 28px; border: 3px solid #45464d; border-top-color: var(--red); border-radius: 50%; animation: canvas-loading-spin .8s linear infinite; }
 .canvas-loading-copy { display: flex; flex-direction: column; gap: 4px; }
@@ -266,12 +286,33 @@ main { max-width: 1640px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 64px) 80px
 .preview-note-error { color: #f08b8b; }
 .preview-note-error span { background: currentColor; }
 
+.faq-section { margin-top: clamp(76px, 8vw, 128px); }
+.faq-heading { margin-bottom: 28px; display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; }
+.faq-heading h2 { margin: 8px 0 0; font-size: clamp(30px, 3.2vw, 48px); line-height: 1; letter-spacing: -.055em; }
+.faq-heading p { max-width: 420px; margin: 0; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 1.8; text-align: right; }
+.faq-list { border: 1px solid var(--line); border-top: 4px solid var(--red); background: var(--surface); box-shadow: 10px 10px 0 rgba(0,0,0,.35); }
+.faq-item.MuiAccordion-root { margin: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; background-image: none; color: var(--ink); }
+.faq-item.MuiAccordion-root:last-child { border-bottom: 0; }
+.faq-item.MuiAccordion-root::before { display: none; }
+.faq-item.MuiAccordion-root.Mui-expanded { margin: 0; }
+.faq-item .MuiAccordion-heading { margin: 0; font-size: inherit; }
+.faq-item .MuiAccordionSummary-root { min-height: 72px; padding: 0 clamp(18px, 3vw, 34px); transition: background .15s; }
+.faq-item .MuiAccordionSummary-root:hover, .faq-item .MuiAccordionSummary-root.Mui-focusVisible { background: hsl(var(--accent-hue) var(--accent-saturation) var(--accent-lightness) / .07); }
+.faq-item .MuiAccordionSummary-root.Mui-expanded { min-height: 72px; background: hsl(var(--accent-hue) var(--accent-saturation) var(--accent-lightness) / .07); }
+.faq-item .MuiAccordionSummary-content { min-width: 0; margin: 20px 0; display: flex; align-items: center; gap: clamp(13px, 2vw, 22px); color: var(--ink); font-size: clamp(14px, 1.4vw, 17px); font-weight: 900; line-height: 1.65; }
+.faq-item .MuiAccordionSummary-content.Mui-expanded { margin: 20px 0; }
+.faq-item .MuiAccordionSummary-expandIconWrapper { margin-left: 18px; color: var(--red); font-size: 28px; }
+.faq-number { flex: 0 0 auto; color: var(--red); font-size: 11px; font-weight: 900; letter-spacing: .12em; }
+.faq-item .MuiAccordionDetails-root { padding: 0 clamp(24px, 5.5vw, 76px) 28px; }
+.faq-item .MuiAccordionDetails-root p { margin: 0; padding-left: clamp(26px, 3.5vw, 48px); border-left: 3px solid var(--red); color: var(--muted); font-size: 13px; font-weight: 600; line-height: 2; white-space: pre-line; }
+
 footer { min-height: 90px; padding: 24px clamp(20px, 4vw, 64px); display: flex; justify-content: space-between; align-items: center; gap: 20px; background: #08090a; border-top: 1px solid #26272b; color: #777; font-size: 11px; }
 footer strong { color: #fff; font-size: 13px; }
 .footer-brand { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .footer-brand a { min-height: 28px; display: inline-flex; align-items: center; color: #b9b4ac; font-weight: 800; text-underline-offset: 4px; }
 .footer-brand a:hover { color: var(--red); }
 .footer-brand a:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+.footer-notes { max-width: 620px; display: flex; align-items: flex-end; flex-direction: column; gap: 5px; line-height: 1.6; text-align: right; }
 
 :root[data-theme="light"] .appbar { background: rgba(255, 253, 248, .94); color: #202126; box-shadow: 0 8px 28px rgba(45, 42, 36, .08); }
 :root[data-theme="light"] .brand small { color: #6c6963; }
@@ -334,7 +375,9 @@ footer strong { color: #fff; font-size: 13px; }
 :root[data-theme="light"] .download-button:hover { box-shadow: 2px 2px 0 #202126; }
 :root[data-theme="light"] .canvas-frame { border-color: #aaa59c; background: #e2ded6; }
 :root[data-theme="light"] .canvas-loading { background: #ebe7df; color: #625f59; }
+:root[data-theme="light"] .share-feedback { color: #a62e2e; }
 :root[data-theme="light"] .preview-note { color: #625f59; }
+:root[data-theme="light"] .faq-list { box-shadow: 10px 10px 0 rgba(45, 42, 36, .1); }
 :root[data-theme="light"] footer { background: #dedad2; border-color: #c7c2b9; color: #5f5b55; }
 :root[data-theme="light"] footer strong { color: #202126; }
 :root[data-theme="light"] .footer-brand a { color: #48453f; }
@@ -364,8 +407,11 @@ footer strong { color: #fff; font-size: 13px; }
   .editor-panel { order: 1; width: 100%; padding: 22px 16px; }
   .preview-panel { padding: 18px 12px; }
   .preview-heading { align-items: flex-start; flex-direction: column; }
-  .download-actions { width: 100%; justify-content: stretch; }
+  .preview-actions { align-items: stretch; flex-direction: column; }
+  .preview-actions .download-actions { width: 100%; flex: 0 0 auto; justify-content: stretch; }
   .download-actions .download-button { flex: 1; }
+  .share-actions { width: 100%; align-items: stretch; flex-direction: column; }
+  .share-actions .share-button { width: 100%; }
   .preview-heading h2, .editor-heading h2 { font-size: 21px; }
   .editor-heading { align-items: flex-start; flex-direction: column; }
   .editor-heading-actions { width: 100%; justify-content: flex-start; }
@@ -375,6 +421,7 @@ footer strong { color: #fff; font-size: 13px; }
   .backup-restore-actions { align-items: stretch; flex-direction: column; }
   .backup-file-button, .backup-apply-button { width: 100%; }
   .download-button { min-height: 42px; padding: 9px 12px; font-size: 12px; }
+  .share-actions .x-share-button { min-height: 58px; padding: 13px 18px; font-size: 15px; }
   .field-grid { grid-template-columns: 1fr; }
   .field-wide { grid-column: auto; }
   .hero-select-row { grid-template-columns: minmax(0, 1fr) 45px; }
@@ -390,7 +437,16 @@ footer strong { color: #fff; font-size: 13px; }
   .theme-heading { flex-direction: column; }
   .theme-value { justify-content: flex-start; }
   .theme-presets { grid-template-columns: repeat(4, 1fr); }
+  .faq-section { margin-top: 64px; }
+  .faq-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .faq-heading p { text-align: left; }
+  .faq-item .MuiAccordionSummary-root, .faq-item .MuiAccordionSummary-root.Mui-expanded { min-height: 64px; }
+  .faq-item .MuiAccordionSummary-content, .faq-item .MuiAccordionSummary-content.Mui-expanded { margin: 16px 0; }
+  .faq-item .MuiAccordionSummary-expandIconWrapper { margin-left: 10px; }
+  .faq-item .MuiAccordionDetails-root { padding: 0 18px 24px 53px; }
+  .faq-item .MuiAccordionDetails-root p { padding-left: 16px; font-size: 12px; line-height: 1.9; }
   footer { align-items: flex-start; flex-direction: column; }
+  .footer-notes { align-items: flex-start; text-align: left; }
 }
 
 @media (prefers-reduced-motion: reduce) {

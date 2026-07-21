@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded'
 import GifBoxRoundedIcon from '@mui/icons-material/GifBoxRounded'
 import ImageRoundedIcon from '@mui/icons-material/ImageRounded'
+import ShareRoundedIcon from '@mui/icons-material/ShareRounded'
 import { Encoder } from 'modern-gif'
+import { FaXTwitter } from 'react-icons/fa6'
 import { hero } from '../data/main'
 import attackerIcon from '../assets/roles/attacker.png'
 import gunnerIcon from '../assets/roles/gunner.png'
@@ -31,7 +33,10 @@ import {
   selectAnimationFramesForExport,
 } from '../gifFrames'
 import { getResumeImageFilenameStem } from '../imageFilename'
+import { isMobileDevice } from '../mobileDevice'
 import { normalizeComment } from '../resumeData'
+import { getResumeXShareUrl, RESUME_SHARE_TEXT } from '../resumeShare'
+import { siteConfig } from '../config/site'
 import type { AvatarFit, ResumeData, Role } from '../types'
 import { getThemeColor, getThemeContrastColor } from '../theme'
 
@@ -55,6 +60,8 @@ if (import.meta.hot) import.meta.hot.data.canvasRenderRevision = CANVAS_RENDER_R
 type Props = {
   data: ResumeData
   headingId?: string
+  showShareActions?: boolean
+  showXShareOnly?: boolean
 }
 
 type AvatarImage = HTMLImageElement | HTMLCanvasElement
@@ -412,6 +419,23 @@ const downloadBlob = (blob: Blob, filename: string) => {
   window.setTimeout(() => URL.revokeObjectURL(url), 0)
 }
 
+const createPngBlob = (canvas: HTMLCanvasElement, scale: number): Promise<Blob> => {
+  const exportCanvas = document.createElement('canvas')
+  exportCanvas.width = Math.round(WIDTH * scale)
+  exportCanvas.height = Math.round(HEIGHT * scale)
+  const exportContext = exportCanvas.getContext('2d')
+  if (!exportContext) return Promise.reject(new Error('画像を作成できませんでした。'))
+  exportContext.imageSmoothingEnabled = true
+  exportContext.imageSmoothingQuality = 'high'
+  exportContext.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height)
+  return new Promise((resolve, reject) => {
+    exportCanvas.toBlob((blob) => {
+      if (blob) resolve(blob)
+      else reject(new Error('画像を作成できませんでした。'))
+    }, 'image/png')
+  })
+}
+
 const createAnimationFrameRenderer = (
   canvas: HTMLCanvasElement,
   data: ResumeData,
@@ -447,18 +471,43 @@ const createAnimationFrameRenderer = (
   }
 }
 
-function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
+function ResumeCanvas({
+  data,
+  headingId = 'preview-title',
+  showShareActions = false,
+  showXShareOnly = false,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animatedImageRef = useRef<AnimatedImage | null>(null)
   const [renderedData, setRenderedData] = useState<ResumeData | null>(null)
   const [gifPreviewState, setGifPreviewState] = useState<GifPreviewState>({ status: 'none' })
   const [animationExportState, setAnimationExportState] = useState<AnimationExportState>({ status: 'idle' })
+  const [canUseMobileFileShare, setCanUseMobileFileShare] = useState(false)
+  const [isSharing, setIsSharing] = useState(false)
+  const [shareError, setShareError] = useState('')
   const renderRevision = CANVAS_RENDER_REVISION
   const isReady = renderedData === data
   const hasRenderedPreview = renderedData !== null
   const animatedImageFormat = getAnimatedImageFormatFromDataUrl(data.avatarDataUrl)
   const hasAnimatedAvatar = data.showPlayerIcon && animatedImageFormat !== null
   const showAnimationUi = hasAnimatedAvatar && gifPreviewState.status !== 'none'
+
+  useEffect(() => {
+    if (!showShareActions || !isMobileDevice(navigator)) {
+      setCanUseMobileFileShare(false)
+      return
+    }
+    try {
+      const probeFile = new File([new Uint8Array([137, 80, 78, 71])], 'compass-resume.png', { type: 'image/png' })
+      setCanUseMobileFileShare(
+        typeof navigator.share === 'function'
+        && typeof navigator.canShare === 'function'
+        && navigator.canShare({ files: [probeFile] }),
+      )
+    } catch {
+      setCanUseMobileFileShare(false)
+    }
+  }, [showShareActions])
 
   useEffect(() => {
     let cancelled = false
@@ -730,19 +779,34 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
   const download = (scale: number) => {
     const canvas = canvasRef.current
     if (!canvas || !isReady) return
-    const exportCanvas = document.createElement('canvas')
-    exportCanvas.width = Math.round(WIDTH * scale)
-    exportCanvas.height = Math.round(HEIGHT * scale)
-    const exportContext = exportCanvas.getContext('2d')
-    if (!exportContext) return
-    exportContext.imageSmoothingEnabled = true
-    exportContext.imageSmoothingQuality = 'high'
-    exportContext.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height)
-    exportCanvas.toBlob((blob) => {
-      if (!blob) return
+    void createPngBlob(canvas, scale).then((blob) => {
       const filenameStem = getResumeImageFilenameStem(data)
       downloadBlob(blob, `${filenameStem}${scale === HIGH_QUALITY_EXPORT_SCALE ? '-large' : ''}.png`)
-    }, 'image/png')
+    }).catch(() => undefined)
+  }
+
+  const shareResumeImage = async () => {
+    const canvas = canvasRef.current
+    if (!canvas || !isReady || !canUseMobileFileShare || isSharing) return
+    setIsSharing(true)
+    setShareError('')
+    try {
+      const blob = await createPngBlob(canvas, 1)
+      const file = new File([blob], `${getResumeImageFilenameStem(data)}.png`, { type: 'image/png' })
+      if (!navigator.canShare({ files: [file] })) throw new Error('この端末では画像を共有できません。')
+      await navigator.share({
+        files: [file],
+        title: siteConfig.name,
+        text: RESUME_SHARE_TEXT,
+        url: siteConfig.url,
+      })
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        setShareError(error instanceof Error ? error.message : '画像を共有できませんでした。')
+      }
+    } finally {
+      setIsSharing(false)
+    }
   }
 
   const downloadGif = async () => {
@@ -834,6 +898,20 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
           <span className="eyebrow">LIVE PREVIEW</span>
           <h2 id={headingId}>完成イメージ</h2>
         </div>
+      </div>
+      <div className="canvas-frame" aria-busy={!isReady}>
+        {!hasRenderedPreview && (
+          <div className="canvas-loading" role="status" aria-live="polite">
+            <span className="canvas-loading-spinner" aria-hidden="true" />
+            <span className="canvas-loading-copy">
+              <strong>フォントを読み込み中…</strong>
+              <small>プレビュー画像を準備しています</small>
+            </span>
+          </div>
+        )}
+        <canvas ref={canvasRef} width={RENDER_WIDTH} height={RENDER_HEIGHT} aria-label={`${data.playerName}さんのコンパス履歴書プレビュー`} />
+      </div>
+      <div className="preview-actions" aria-label="完成画像の保存と共有">
         <div className="download-actions" aria-label="保存形式と画質を選択">
           <button className="download-button download-button-standard" type="button" onClick={() => download(STANDARD_EXPORT_SCALE)} disabled={!isReady}>
             <DownloadRoundedIcon />
@@ -876,19 +954,34 @@ function ResumeCanvas({ data, headingId = 'preview-title' }: Props) {
             </>
           )}
         </div>
-      </div>
-      <div className="canvas-frame" aria-busy={!isReady}>
-        {!hasRenderedPreview && (
-          <div className="canvas-loading" role="status" aria-live="polite">
-            <span className="canvas-loading-spinner" aria-hidden="true" />
-            <span className="canvas-loading-copy">
-              <strong>フォントを読み込み中…</strong>
-              <small>プレビュー画像を準備しています</small>
-            </span>
+        {(showShareActions || showXShareOnly) && (
+          <div className="share-actions" aria-label="完成画像の共有方法を選択">
+            {canUseMobileFileShare && (
+              <button
+                className="download-button share-button"
+                type="button"
+                onClick={() => void shareResumeImage()}
+                disabled={!isReady || isSharing}
+              >
+                <ShareRoundedIcon aria-hidden="true" />
+                <span>{isSharing ? '共有準備中…' : '画像を共有'}<small>Web Share API</small></span>
+              </button>
+            )}
+            <a
+              className="download-button share-button x-share-button"
+              href={getResumeXShareUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaXTwitter aria-hidden="true" />
+              <span>X（Twitter）で共有<small>投稿画面を開く</small></span>
+            </a>
           </div>
         )}
-        <canvas ref={canvasRef} width={RENDER_WIDTH} height={RENDER_HEIGHT} aria-label={`${data.playerName}さんのコンパス履歴書プレビュー`} />
       </div>
+      {shareError && (
+        <p className="share-feedback" role="alert">{shareError}</p>
+      )}
       {showAnimationUi && (
         <p
           className={`preview-note${gifPreviewState.status === 'error' || animationExportState.status === 'error' ? ' preview-note-error' : ''}`}
